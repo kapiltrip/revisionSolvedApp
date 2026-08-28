@@ -1,5 +1,9 @@
 import { addDays, getRevisionStore } from '@/lib/revision-store';
 
+function stringField(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback;
+}
+
 export async function GET() {
   try {
     const db = await getRevisionStore();
@@ -42,12 +46,12 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
 
     if (action === 'add') {
-      const title = String(body.title ?? '').trim();
-      const subject = String(body.subject ?? '').trim();
-      const repository = String(body.repository ?? 'revision-solved');
-      const priority = String(body.priority ?? 'normal');
-      const targetDate = body.targetDate ? String(body.targetDate) : null;
-      const sourceUrl = body.sourceUrl ? String(body.sourceUrl) : null;
+      const title = stringField(body.title).trim();
+      const subject = stringField(body.subject).trim();
+      const repository = stringField(body.repository, 'revision-solved');
+      const priority = stringField(body.priority, 'normal');
+      const targetDate = stringField(body.targetDate) || null;
+      const sourceUrl = stringField(body.sourceUrl) || null;
 
       if (!title || !subject) {
         return Response.json(
@@ -81,11 +85,11 @@ export async function POST(request: Request) {
     }
 
     if (action === 'revise') {
-      const id = String(body.id ?? '');
-      const mark = String(body.mark ?? '');
-      const revisedAt = String(body.revisedAt ?? '');
-      const proof = String(body.proof ?? '').trim();
-      const notes = String(body.notes ?? '').trim();
+      const id = stringField(body.id);
+      const mark = stringField(body.mark);
+      const revisedAt = stringField(body.revisedAt);
+      const proof = stringField(body.proof).trim();
+      const notes = stringField(body.notes).trim();
 
       if (!id || !['R', 'H', 'M'].includes(mark)) {
         return Response.json(

@@ -3,6 +3,8 @@
 Revision Solved is a durable revision tracker built from the topic ledgers in
 Kapil's `RevisionSolved` and `systemverilog-from-beginning` repositories.
 
+**Live app:** <https://revision-solved.kapiltripathi267.chatgpt.site>
+
 ## What it tracks
 
 - covered, in-progress, and not-covered topics;

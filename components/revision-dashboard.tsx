@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { type SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
   BookOpenCheck,
@@ -9,7 +9,6 @@ import {
   Download,
   ExternalLink,
   Flame,
-  History,
   Plus,
   RotateCcw,
   Search,
@@ -161,7 +160,11 @@ export function RevisionDashboard() {
   }
 
   useEffect(() => {
-    void loadTopics();
+    const timeout = window.setTimeout(() => {
+      void loadTopics();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   const metrics = useMemo(() => {
@@ -216,7 +219,9 @@ export function RevisionDashboard() {
     setError('');
   }
 
-  async function recordRevision(event: FormEvent<HTMLFormElement>) {
+  async function recordRevision(
+    event: SyntheticEvent<HTMLFormElement, SubmitEvent>,
+  ) {
     event.preventDefault();
     if (!selectedTopic) return;
     setSaving(true);
@@ -255,7 +260,9 @@ export function RevisionDashboard() {
     }
   }
 
-  async function addTopic(event: FormEvent<HTMLFormElement>) {
+  async function addTopic(
+    event: SyntheticEvent<HTMLFormElement, SubmitEvent>,
+  ) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setSaving(true);
@@ -506,17 +513,17 @@ export function RevisionDashboard() {
                   ))}
                 </div>
               </fieldset>
-              <label className="block">
+              <label className="block" htmlFor="revision-date">
                 <span className="input-label">Revision date</span>
-                <Input type="date" value={revisedAt} onChange={(event) => setRevisedAt(event.target.value)} required />
+                <Input id="revision-date" type="date" value={revisedAt} onChange={(event) => setRevisedAt(event.target.value)} required />
               </label>
-              <label className="block">
+              <label className="block" htmlFor="revision-proof">
                 <span className="input-label">Proof produced</span>
-                <Textarea value={proof} onChange={(event) => setProof(event.target.value)} placeholder="Example: drew the AXI handshake and explained a stalled payload without notes" />
+                <Textarea id="revision-proof" value={proof} onChange={(event) => setProof(event.target.value)} placeholder="Example: drew the AXI handshake and explained a stalled payload without notes" />
               </label>
-              <label className="block">
+              <label className="block" htmlFor="revision-notes">
                 <span className="input-label">Weakest link / next repair</span>
-                <Textarea value={revisionNotes} onChange={(event) => setRevisionNotes(event.target.value)} placeholder="What was still unclear, hesitant, or worth testing next?" />
+                <Textarea id="revision-notes" value={revisionNotes} onChange={(event) => setRevisionNotes(event.target.value)} placeholder="What was still unclear, hesitant, or worth testing next?" />
               </label>
             </div>
             <DialogFooter className="mt-6">
@@ -534,12 +541,12 @@ export function RevisionDashboard() {
               <DialogDescription>Add another trackable unit to either repository ledger.</DialogDescription>
             </DialogHeader>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="block sm:col-span-2"><span className="input-label">Topic</span><Input name="title" placeholder="Example: AXI outstanding transactions" required /></label>
-              <label className="block"><span className="input-label">Subject</span><Input name="subject" placeholder="AMBA AXI" required /></label>
-              <label className="block"><span className="input-label">Repository</span><NativeSelect name="repository" className="w-full"><NativeSelectOption value="revision-solved">RevisionSolved</NativeSelectOption><NativeSelectOption value="systemverilog-from-beginning">SystemVerilog from Beginning</NativeSelectOption></NativeSelect></label>
-              <label className="block"><span className="input-label">Priority</span><NativeSelect name="priority" className="w-full"><NativeSelectOption value="high">High</NativeSelectOption><NativeSelectOption value="medium">Medium</NativeSelectOption><NativeSelectOption value="normal">Normal</NativeSelectOption></NativeSelect></label>
-              <label className="block"><span className="input-label">Target date</span><Input type="date" name="targetDate" /></label>
-              <label className="block sm:col-span-2"><span className="input-label">Source link (optional)</span><Input type="url" name="sourceUrl" placeholder="https://github.com/…" /></label>
+              <label className="block sm:col-span-2" htmlFor="topic-title"><span className="input-label">Topic</span><Input id="topic-title" name="title" placeholder="Example: AXI outstanding transactions" required /></label>
+              <label className="block" htmlFor="topic-subject"><span className="input-label">Subject</span><Input id="topic-subject" name="subject" placeholder="AMBA AXI" required /></label>
+              <label className="block" htmlFor="topic-repository"><span className="input-label">Repository</span><NativeSelect id="topic-repository" name="repository" className="w-full"><NativeSelectOption value="revision-solved">RevisionSolved</NativeSelectOption><NativeSelectOption value="systemverilog-from-beginning">SystemVerilog from Beginning</NativeSelectOption></NativeSelect></label>
+              <label className="block" htmlFor="topic-priority"><span className="input-label">Priority</span><NativeSelect id="topic-priority" name="priority" className="w-full"><NativeSelectOption value="high">High</NativeSelectOption><NativeSelectOption value="medium">Medium</NativeSelectOption><NativeSelectOption value="normal">Normal</NativeSelectOption></NativeSelect></label>
+              <label className="block" htmlFor="topic-target-date"><span className="input-label">Target date</span><Input id="topic-target-date" type="date" name="targetDate" /></label>
+              <label className="block sm:col-span-2" htmlFor="topic-source-url"><span className="input-label">Source link (optional)</span><Input id="topic-source-url" type="url" name="sourceUrl" placeholder="https://github.com/…" /></label>
             </div>
             <DialogFooter className="mt-6">
               <Button type="submit" className="h-10" disabled={saving}>{saving ? 'Adding…' : 'Add topic'}</Button>
