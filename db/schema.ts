@@ -15,6 +15,8 @@ export const topics = sqliteTable('topics', {
   recallStreak: integer('recall_streak').notNull().default(0),
   proof: text('proof').notNull().default(''),
   notes: text('notes').notNull().default(''),
+  urgencyOverride: text('urgency_override'),
+  estimatedMinutes: integer('estimated_minutes').notNull().default(30),
   sourceUrl: text('source_url'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
@@ -28,5 +30,20 @@ export const revisions = sqliteTable('revisions', {
   nextDueAt: text('next_due_at').notNull(),
   proof: text('proof').notNull().default(''),
   notes: text('notes').notNull().default(''),
+  durationMinutes: integer('duration_minutes').notNull().default(0),
+  reflection: text('reflection').notNull().default(''),
+  mood: text('mood').notNull().default('steady'),
   createdAt: text('created_at').notNull(),
+});
+
+export const revisionSettings = sqliteTable('revision_settings', {
+  id: text('id').primaryKey(),
+  urgentWindowDays: integer('urgent_window_days').notNull().default(0),
+  yellowWindowDays: integer('yellow_window_days').notNull().default(3),
+  missedIntervalDays: integer('missed_interval_days').notNull().default(1),
+  hesitantIntervalDays: integer('hesitant_interval_days').notNull().default(3),
+  recalledFirstDays: integer('recalled_first_days').notNull().default(7),
+  recalledSecondDays: integer('recalled_second_days').notNull().default(14),
+  recalledMasteredDays: integer('recalled_mastered_days').notNull().default(30),
+  updatedAt: text('updated_at').notNull(),
 });
