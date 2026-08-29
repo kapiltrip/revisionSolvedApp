@@ -13,7 +13,7 @@ Kapil's `RevisionSolved`, `systemverilog-from-beginning`, and
 - the last revision date for every topic and for the whole tracker;
 - R/H/M recall quality with the Day 1/3/7/14/30 review ladder;
 - proof produced, weakest causal link, notes, and revision history;
-- custom topics added to either repository ledger;
+- custom topics added to any repository ledger;
 - expandable, clickable subtopic checklists for every topic, saved immediately;
 - portable JSON backups exported from the app.
 
