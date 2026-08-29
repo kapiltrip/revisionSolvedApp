@@ -1,4 +1,5 @@
 import { addDays, getRevisionStore } from '@/lib/revision-store';
+import { subtopicSeedsForTopic } from '@/data/subtopic-seed';
 
 function stringField(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback;
@@ -26,7 +27,7 @@ function boundedInteger(
 export async function GET() {
   try {
     const db = await getRevisionStore();
-    const [topics, revisions, settings] = await Promise.all([
+    const [topics, subtopics, revisions, settings] = await Promise.all([
       db
         .prepare(
           `SELECT id, repository, subject, title, status, confidence, priority,
@@ -35,6 +36,13 @@ export async function GET() {
             source_url, created_at, updated_at
           FROM topics
           ORDER BY target_date IS NULL, target_date, repository, subject, title`,
+        )
+        .all(),
+      db
+        .prepare(
+          `SELECT id, topic_id, label, covered, covered_at, sort_order,
+            source_url
+          FROM subtopics ORDER BY topic_id, sort_order, label`,
         )
         .all(),
       db
@@ -56,6 +64,7 @@ export async function GET() {
 
     return Response.json({
       topics: topics.results,
+      subtopics: subtopics.results,
       revisions: revisions.results,
       settings,
     });
@@ -125,7 +134,91 @@ export async function POST(request: Request) {
         )
         .run();
 
+      const subtopics = subtopicSeedsForTopic({
+        id,
+        subject,
+        sourceUrl: sourceUrl ?? '',
+      });
+      await db.batch(
+        subtopics.map((subtopic) =>
+          db
+            .prepare(
+              `INSERT INTO subtopics (
+                id, topic_id, label, sort_order, source_url, created_at,
+                updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .bind(
+              subtopic.id,
+              subtopic.topicId,
+              subtopic.label,
+              subtopic.sortOrder,
+              subtopic.sourceUrl,
+              now,
+              now,
+            ),
+        ),
+      );
+
       return Response.json({ ok: true, id });
+    }
+
+    if (action === 'toggle_subtopic') {
+      const id = stringField(body.id);
+      const covered = body.covered === true;
+
+      if (!id) {
+        return Response.json(
+          { error: 'Subtopic is required.' },
+          { status: 400 },
+        );
+      }
+
+      const subtopic = await db
+        .prepare('SELECT topic_id FROM subtopics WHERE id = ?')
+        .bind(id)
+        .first<{ topic_id: string }>();
+      if (!subtopic) {
+        return Response.json({ error: 'Subtopic not found.' }, { status: 404 });
+      }
+
+      await db
+        .prepare(
+          `UPDATE subtopics SET covered = ?, covered_at = ?, updated_at = ?
+          WHERE id = ?`,
+        )
+        .bind(covered ? 1 : 0, covered ? now : null, now, id)
+        .run();
+
+      const progress = await db
+        .prepare(
+          `SELECT COUNT(*) AS total,
+            SUM(CASE WHEN covered = 1 THEN 1 ELSE 0 END) AS covered
+          FROM subtopics WHERE topic_id = ?`,
+        )
+        .bind(subtopic.topic_id)
+        .first<{ total: number; covered: number }>();
+      const total = Number(progress?.total ?? 0);
+      const coveredCount = Number(progress?.covered ?? 0);
+      const status =
+        total > 0 && coveredCount === total
+          ? 'covered'
+          : coveredCount > 0
+            ? 'in_progress'
+            : 'not_covered';
+
+      await db
+        .prepare('UPDATE topics SET status = ?, updated_at = ? WHERE id = ?')
+        .bind(status, now, subtopic.topic_id)
+        .run();
+
+      return Response.json({
+        ok: true,
+        topicId: subtopic.topic_id,
+        topicStatus: status,
+        coveredCount,
+        total,
+      });
     }
 
     if (action === 'revise') {
@@ -252,6 +345,16 @@ export async function POST(request: Request) {
             mood,
             now,
           ),
+        ...(mark === 'R'
+          ? [
+              db
+                .prepare(
+                  `UPDATE subtopics SET covered = 1, covered_at = ?,
+                    updated_at = ? WHERE topic_id = ?`,
+                )
+                .bind(now, now, id),
+            ]
+          : []),
       ]);
 
       return Response.json({ ok: true, nextDueAt, estimatedMinutes });

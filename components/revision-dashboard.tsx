@@ -8,6 +8,7 @@ import {
   BookOpenCheck,
   Brain,
   CalendarClock,
+  ChevronDown,
   CheckCircle2,
   CloudSun,
   Download,
@@ -24,6 +25,7 @@ import {
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -43,10 +45,14 @@ import { Textarea } from '@/components/ui/textarea';
 
 type Urgency = 'urgent' | 'soon' | 'ready';
 type Mood = 'drained' | 'foggy' | 'steady' | 'energized';
+type Repository =
+  | 'revision-solved'
+  | 'systemverilog-from-beginning'
+  | 'cpp-and-scripting-practice';
 
 type Topic = {
   id: string;
-  repository: 'revision-solved' | 'systemverilog-from-beginning';
+  repository: Repository;
   subject: string;
   title: string;
   status: 'not_covered' | 'in_progress' | 'covered';
@@ -61,6 +67,16 @@ type Topic = {
   notes: string;
   urgency_override: Urgency | null;
   estimated_minutes: number;
+  source_url: string | null;
+};
+
+type Subtopic = {
+  id: string;
+  topic_id: string;
+  label: string;
+  covered: boolean | number;
+  covered_at: string | null;
+  sort_order: number;
   source_url: string | null;
 };
 
@@ -100,7 +116,12 @@ const defaultSettings: RevisionSettings = {
 const repoLabels = {
   'revision-solved': 'RevisionSolved',
   'systemverilog-from-beginning': 'SystemVerilog from Beginning',
+  'cpp-and-scripting-practice': 'C++ & Scripting Practice',
 };
+
+function subtopicIsCovered(subtopic: Subtopic) {
+  return subtopic.covered === true || subtopic.covered === 1;
+}
 
 const moodOptions = [
   {
@@ -199,6 +220,7 @@ function reasonFor(topic: Topic, settings: RevisionSettings) {
 
 export function RevisionDashboard() {
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(true);
@@ -221,6 +243,10 @@ export function RevisionDashboard() {
   const [studyMinutes, setStudyMinutes] = useState(45);
   const [feeling, setFeeling] = useState<Mood>('steady');
   const [saving, setSaving] = useState(false);
+  const [checkingSubtopic, setCheckingSubtopic] = useState<string | null>(null);
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   async function loadTopics() {
     setError('');
@@ -228,12 +254,14 @@ export function RevisionDashboard() {
       const response = await fetch('/api/topics', { cache: 'no-store' });
       const data = (await response.json()) as {
         topics?: Topic[];
+        subtopics?: Subtopic[];
         revisions?: Revision[];
         settings?: RevisionSettings;
         error?: string;
       };
       if (!response.ok) throw new Error(data.error ?? 'Could not load topics.');
       setTopics(data.topics ?? []);
+      setSubtopics(data.subtopics ?? []);
       setRevisions(data.revisions ?? []);
       setSettings(data.settings ?? defaultSettings);
     } catch (loadError) {
@@ -256,6 +284,16 @@ export function RevisionDashboard() {
     () => new Map(topics.map((topic) => [topic.id, topic])),
     [topics],
   );
+
+  const subtopicsByTopic = useMemo(() => {
+    const groups = new Map<string, Subtopic[]>();
+    for (const subtopic of subtopics) {
+      const group = groups.get(subtopic.topic_id) ?? [];
+      group.push(subtopic);
+      groups.set(subtopic.topic_id, group);
+    }
+    return groups;
+  }, [subtopics]);
 
   const metrics = useMemo(() => {
     const covered = topics.filter((topic) => topic.status === 'covered').length;
@@ -402,7 +440,7 @@ export function RevisionDashboard() {
     return prioritized.filter((topic) => {
       const matchesQuery =
         !query ||
-        `${topic.title} ${topic.subject} ${repoLabels[topic.repository]}`
+        `${topic.title} ${topic.subject} ${repoLabels[topic.repository]} ${(subtopicsByTopic.get(topic.id) ?? []).map((subtopic) => subtopic.label).join(' ')}`
           .toLowerCase()
           .includes(query);
       return (
@@ -411,7 +449,7 @@ export function RevisionDashboard() {
         (statusFilter === 'all' || topic.status === statusFilter)
       );
     });
-  }, [prioritized, repoFilter, search, statusFilter]);
+  }, [prioritized, repoFilter, search, statusFilter, subtopicsByTopic]);
 
   const recentRevisions = revisions.slice(0, 6);
   const lastRevision = recentRevisions[0];
@@ -438,9 +476,70 @@ export function RevisionDashboard() {
     const data = (await response.json()) as {
       error?: string;
       nextDueAt?: string;
+      topicId?: string;
+      topicStatus?: Topic['status'];
+      coveredCount?: number;
+      total?: number;
     };
     if (!response.ok) throw new Error(data.error ?? 'Could not save changes.');
     return data;
+  }
+
+  function toggleTopicExpanded(topicId: string) {
+    setExpandedTopics((current) => {
+      const next = new Set(current);
+      if (next.has(topicId)) next.delete(topicId);
+      else next.add(topicId);
+      return next;
+    });
+  }
+
+  async function toggleSubtopic(subtopic: Subtopic, covered: boolean) {
+    if (checkingSubtopic) return;
+    setCheckingSubtopic(subtopic.id);
+    setError('');
+    const priorCovered = subtopicIsCovered(subtopic);
+    setSubtopics((current) =>
+      current.map((item) =>
+        item.id === subtopic.id
+          ? {
+              ...item,
+              covered,
+              covered_at: covered ? new Date().toISOString() : null,
+            }
+          : item,
+      ),
+    );
+
+    try {
+      const data = await postAction({
+        action: 'toggle_subtopic',
+        id: subtopic.id,
+        covered,
+      });
+      if (data.topicId && data.topicStatus) {
+        setTopics((current) =>
+          current.map((topic) =>
+            topic.id === data.topicId
+              ? { ...topic, status: data.topicStatus! }
+              : topic,
+          ),
+        );
+      }
+    } catch (saveError) {
+      setSubtopics((current) =>
+        current.map((item) =>
+          item.id === subtopic.id ? { ...item, covered: priorCovered } : item,
+        ),
+      );
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : 'Could not save the quick check.',
+      );
+    } finally {
+      setCheckingSubtopic(null);
+    }
   }
 
   async function recordRevision(
@@ -572,7 +671,13 @@ export function RevisionDashboard() {
 
   function exportBackup() {
     const payload = JSON.stringify(
-      { exportedAt: new Date().toISOString(), settings, topics, revisions },
+      {
+        exportedAt: new Date().toISOString(),
+        settings,
+        topics,
+        subtopics,
+        revisions,
+      },
       null,
       2,
     );
@@ -664,6 +769,14 @@ export function RevisionDashboard() {
               className="repo-link"
             >
               SystemVerilog <ExternalLink />
+            </a>
+            <a
+              href="https://github.com/kapiltrip/cpp-and-scripting-practice"
+              target="_blank"
+              rel="noreferrer"
+              className="repo-link"
+            >
+              C++ &amp; Scripting <ExternalLink />
             </a>
           </div>
         </section>
@@ -1088,13 +1201,16 @@ export function RevisionDashboard() {
                       aria-label="Filter by repository"
                     >
                       <NativeSelectOption value="all">
-                        Both repositories
+                        All repositories
                       </NativeSelectOption>
                       <NativeSelectOption value="revision-solved">
                         RevisionSolved
                       </NativeSelectOption>
                       <NativeSelectOption value="systemverilog-from-beginning">
                         SystemVerilog
+                      </NativeSelectOption>
+                      <NativeSelectOption value="cpp-and-scripting-practice">
+                        C++ &amp; Scripting
                       </NativeSelectOption>
                     </NativeSelect>
                     <NativeSelect
@@ -1120,82 +1236,147 @@ export function RevisionDashboard() {
                 </div>
               </div>
               <div className="divide-y">
-                {filteredTopics.map((topic) => (
-                  <article key={topic.id} className="topic-row">
-                    <span
-                      className={`urgency-dot ${urgencyFor(topic, settings)}`}
-                      aria-label={`${urgencyFor(topic, settings)} urgency`}
-                    />
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold leading-5">
-                          {topic.title}
-                        </h3>
-                        {topic.confidence && (
-                          <Badge
-                            className={`mark-badge mark-${topic.confidence.toLowerCase()}`}
-                            variant="outline"
+                {filteredTopics.map((topic) => {
+                  const topicSubtopics = subtopicsByTopic.get(topic.id) ?? [];
+                  const coveredSubtopics =
+                    topicSubtopics.filter(subtopicIsCovered).length;
+                  const expanded = expandedTopics.has(topic.id);
+                  return (
+                    <div key={topic.id} className="topic-record">
+                      <article className="topic-row">
+                        <span
+                          className={`urgency-dot ${urgencyFor(topic, settings)}`}
+                          aria-label={`${urgencyFor(topic, settings)} urgency`}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              className="topic-disclosure"
+                              onClick={() => toggleTopicExpanded(topic.id)}
+                              aria-expanded={expanded}
+                              aria-controls={`subtopics-${topic.id}`}
+                            >
+                              <ChevronDown
+                                className={expanded ? 'expanded' : ''}
+                              />
+                              <h3>{topic.title}</h3>
+                            </button>
+                            {topic.confidence && (
+                              <Badge
+                                className={`mark-badge mark-${topic.confidence.toLowerCase()}`}
+                                variant="outline"
+                              >
+                                {topic.confidence}
+                              </Badge>
+                            )}
+                            {topic.urgency_override && (
+                              <Badge variant="secondary">Manual color</Badge>
+                            )}
+                            <Badge variant="outline">
+                              {coveredSubtopics}/{topicSubtopics.length} quick
+                              checks
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {repoLabels[topic.repository]} · {topic.subject} ·{' '}
+                            {formatMinutes(
+                              Number(topic.estimated_minutes || 30),
+                            )}{' '}
+                            expected
+                          </p>
+                          {topic.notes && (
+                            <p className="mt-2 line-clamp-1 text-xs text-foreground/70">
+                              Next repair: {topic.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="hidden text-right text-xs sm:block">
+                          <p className="font-semibold">{statusLabel(topic)}</p>
+                          <p className="mt-1 text-muted-foreground">
+                            Last: {formatDate(topic.last_revised_at, 'Never')}
+                          </p>
+                        </div>
+                        <div className="hidden text-right text-xs lg:block">
+                          <p className="font-semibold">{dueCopy(topic)}</p>
+                          <p className="mt-1 text-muted-foreground">
+                            {formatDate(topic.next_due_at ?? topic.target_date)}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-end gap-1">
+                          {topic.source_url && (
+                            <a
+                              href={topic.source_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="icon-link"
+                              aria-label={`Open source for ${topic.title}`}
+                            >
+                              <ArrowUpRight />
+                            </a>
+                          )}
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => setTuningTopic(topic)}
+                            aria-label={`Tune ${topic.title}`}
                           >
-                            {topic.confidence}
-                          </Badge>
-                        )}
-                        {topic.urgency_override && (
-                          <Badge variant="secondary">Manual color</Badge>
-                        )}
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {repoLabels[topic.repository]} · {topic.subject} ·{' '}
-                        {formatMinutes(Number(topic.estimated_minutes || 30))}{' '}
-                        expected
-                      </p>
-                      {topic.notes && (
-                        <p className="mt-2 line-clamp-1 text-xs text-foreground/70">
-                          Next repair: {topic.notes}
-                        </p>
-                      )}
-                    </div>
-                    <div className="hidden text-right text-xs sm:block">
-                      <p className="font-semibold">{statusLabel(topic)}</p>
-                      <p className="mt-1 text-muted-foreground">
-                        Last: {formatDate(topic.last_revised_at, 'Never')}
-                      </p>
-                    </div>
-                    <div className="hidden text-right text-xs lg:block">
-                      <p className="font-semibold">{dueCopy(topic)}</p>
-                      <p className="mt-1 text-muted-foreground">
-                        {formatDate(topic.next_due_at ?? topic.target_date)}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-end gap-1">
-                      {topic.source_url && (
-                        <a
-                          href={topic.source_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="icon-link"
-                          aria-label={`Open source for ${topic.title}`}
+                            <Pencil />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => beginRevision(topic)}
+                          >
+                            <RotateCcw /> Revise
+                          </Button>
+                        </div>
+                      </article>
+                      {expanded && (
+                        <div
+                          id={`subtopics-${topic.id}`}
+                          className="subtopic-panel"
                         >
-                          <ArrowUpRight />
-                        </a>
+                          <div className="subtopic-intro">
+                            <div>
+                              <p className="font-semibold">
+                                Quick coverage check
+                              </p>
+                              <p>
+                                Click each item you have covered. Your progress
+                                is saved immediately.
+                              </p>
+                            </div>
+                            <span>
+                              {coveredSubtopics} of {topicSubtopics.length} done
+                            </span>
+                          </div>
+                          <div className="subtopic-grid">
+                            {topicSubtopics.map((subtopic) => (
+                              <label
+                                key={subtopic.id}
+                                className={`subtopic-check ${subtopicIsCovered(subtopic) ? 'covered' : ''}`}
+                              >
+                                <Checkbox
+                                  checked={subtopicIsCovered(subtopic)}
+                                  disabled={checkingSubtopic === subtopic.id}
+                                  onCheckedChange={(checked) =>
+                                    void toggleSubtopic(
+                                      subtopic,
+                                      checked === true,
+                                    )
+                                  }
+                                  aria-label={`Mark ${subtopic.label} as covered`}
+                                />
+                                <span>{subtopic.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                      <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        onClick={() => setTuningTopic(topic)}
-                        aria-label={`Tune ${topic.title}`}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => beginRevision(topic)}
-                      >
-                        <RotateCcw /> Revise
-                      </Button>
                     </div>
-                  </article>
-                ))}
+                  );
+                })}
                 {filteredTopics.length === 0 && (
                   <div className="p-10 text-center text-sm text-muted-foreground">
                     No topics match these filters.
@@ -1342,7 +1523,7 @@ export function RevisionDashboard() {
             <DialogHeader>
               <DialogTitle className="text-xl">Add a topic</DialogTitle>
               <DialogDescription>
-                Add another trackable unit to either repository ledger.
+                Add another trackable unit to any repository ledger.
               </DialogDescription>
             </DialogHeader>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -1373,6 +1554,9 @@ export function RevisionDashboard() {
                   </NativeSelectOption>
                   <NativeSelectOption value="systemverilog-from-beginning">
                     SystemVerilog from Beginning
+                  </NativeSelectOption>
+                  <NativeSelectOption value="cpp-and-scripting-practice">
+                    C++ &amp; Scripting Practice
                   </NativeSelectOption>
                 </NativeSelect>
               </Field>

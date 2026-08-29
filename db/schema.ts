@@ -47,3 +47,15 @@ export const revisionSettings = sqliteTable('revision_settings', {
   recalledMasteredDays: integer('recalled_mastered_days').notNull().default(30),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const subtopics = sqliteTable('subtopics', {
+  id: text('id').primaryKey(),
+  topicId: text('topic_id').notNull(),
+  label: text('label').notNull(),
+  covered: integer('covered', { mode: 'boolean' }).notNull().default(false),
+  coveredAt: text('covered_at'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  sourceUrl: text('source_url'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});

@@ -15,6 +15,13 @@
       "when": 1787942111838,
       "tag": "0001_woozy_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787976160655,
+      "tag": "0002_bitter_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

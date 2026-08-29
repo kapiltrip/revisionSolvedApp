@@ -1,7 +1,8 @@
 # Revision Solved App
 
 Revision Solved is a durable revision tracker built from the topic ledgers in
-Kapil's `RevisionSolved` and `systemverilog-from-beginning` repositories.
+Kapil's `RevisionSolved`, `systemverilog-from-beginning`, and
+`cpp-and-scripting-practice` repositories.
 
 **Live app:** <https://revision-solved.kapiltripathi267.chatgpt.site>
 
@@ -13,6 +14,7 @@ Kapil's `RevisionSolved` and `systemverilog-from-beginning` repositories.
 - R/H/M recall quality with the Day 1/3/7/14/30 review ladder;
 - proof produced, weakest causal link, notes, and revision history;
 - custom topics added to either repository ledger;
+- expandable, clickable subtopic checklists for every topic, saved immediately;
 - portable JSON backups exported from the app.
 
 ## Product updates suggested by Kapil
@@ -35,13 +37,18 @@ here so the product direction remains visible in Git history:
 6. Keep study planning engaging without overpacking it: ask for one of four
    current feelings and the available study time, then build a realistic topic
    plan with enough time, a break when useful, and a buffer.
+7. Include both the C++ and scripting parts of
+   `cpp-and-scripting-practice`, with every topic expandable into subtopics that
+   can be clicked as a quick, durable record of what has been covered.
 
 These requests are implemented in the current dashboard, adaptive session
 planner, topic tuning controls, observation map, revision trail, and persistent
 session records.
 
-The initial 50-topic source ledger is kept in `data/topic-seed.ts`. Runtime
-records are stored in D1 and the schema/migration is versioned with the app.
+The source topic ledger is kept in `data/topic-seed.ts`, and the quick-check
+definitions are kept in `data/subtopic-seed.ts`. Runtime topics, subtopic
+coverage, revisions, and settings are stored in D1; schema changes and
+migrations are versioned with the app.
 
 ## Local development
 

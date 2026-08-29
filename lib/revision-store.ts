@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 
+import { subtopicSeedsForTopic } from '@/data/subtopic-seed';
 import { topicSeeds } from '@/data/topic-seed';
 
 const topicTableSql = `CREATE TABLE IF NOT EXISTS topics (
@@ -47,6 +48,18 @@ const settingsTableSql = `CREATE TABLE IF NOT EXISTS revision_settings (
   recalled_first_days INTEGER NOT NULL DEFAULT 7,
   recalled_second_days INTEGER NOT NULL DEFAULT 14,
   recalled_mastered_days INTEGER NOT NULL DEFAULT 30,
+  updated_at TEXT NOT NULL
+)`;
+
+const subtopicTableSql = `CREATE TABLE IF NOT EXISTS subtopics (
+  id TEXT PRIMARY KEY,
+  topic_id TEXT NOT NULL,
+  label TEXT NOT NULL,
+  covered INTEGER NOT NULL DEFAULT 0,
+  covered_at TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  source_url TEXT,
+  created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 )`;
 
@@ -108,11 +121,15 @@ export async function getRevisionStore() {
     db.prepare(topicTableSql),
     db.prepare(revisionTableSql),
     db.prepare(settingsTableSql),
+    db.prepare(subtopicTableSql),
     db.prepare(
       'CREATE INDEX IF NOT EXISTS topics_due_idx ON topics(next_due_at, target_date)',
     ),
     db.prepare(
       'CREATE INDEX IF NOT EXISTS revisions_topic_idx ON revisions(topic_id, revised_at)',
+    ),
+    db.prepare(
+      'CREATE INDEX IF NOT EXISTS subtopics_topic_idx ON subtopics(topic_id, sort_order)',
     ),
   ]);
   await ensureColumns(db);
@@ -129,16 +146,20 @@ export async function getRevisionStore() {
     .bind(now)
     .run();
 
-  const countRow = await db
-    .prepare('SELECT COUNT(*) AS count FROM topics')
-    .first<{ count: number }>();
+  const latestSeed = topicSeeds.at(-1);
+  const seedExists = latestSeed
+    ? await db
+        .prepare('SELECT 1 AS present FROM topics WHERE id = ?')
+        .bind(latestSeed.id)
+        .first<{ present: number }>()
+    : { present: 1 };
 
-  if (Number(countRow?.count ?? 0) === 0) {
+  if (!seedExists) {
     await db.batch(
       topicSeeds.map((topic) =>
         db
           .prepare(
-            `INSERT INTO topics (
+            `INSERT OR IGNORE INTO topics (
               id, repository, subject, title, priority, target_date,
               source_url, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -157,6 +178,59 @@ export async function getRevisionStore() {
       ),
     );
   }
+
+  const topicsWithoutSubtopics = await db
+    .prepare(
+      `SELECT t.id, t.subject, t.source_url, t.status
+      FROM topics t
+      WHERE NOT EXISTS (
+        SELECT 1 FROM subtopics s WHERE s.topic_id = t.id
+      )`,
+    )
+    .all<{
+      id: string;
+      subject: string;
+      source_url: string | null;
+      status: string;
+    }>();
+
+  const missingSubtopics = topicsWithoutSubtopics.results.flatMap((topic) =>
+    subtopicSeedsForTopic({
+      id: topic.id,
+      subject: topic.subject,
+      sourceUrl: topic.source_url ?? '',
+    }).map((subtopic) => ({
+      ...subtopic,
+      covered: topic.status === 'covered' ? 1 : 0,
+    })),
+  );
+
+  if (missingSubtopics.length) {
+    await db.batch(
+      missingSubtopics.map((subtopic) =>
+        db
+          .prepare(
+            `INSERT OR IGNORE INTO subtopics (
+              id, topic_id, label, covered, covered_at, sort_order,
+              source_url, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .bind(
+            subtopic.id,
+            subtopic.topicId,
+            subtopic.label,
+            subtopic.covered,
+            subtopic.covered ? now : null,
+            subtopic.sortOrder,
+            subtopic.sourceUrl,
+            now,
+            now,
+          ),
+      ),
+    );
+  }
+
+  await db.prepare('PRAGMA optimize').run();
 
   return db;
 }

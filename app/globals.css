@@ -239,6 +239,42 @@ body {
   .topic-row {
     @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/35 sm:grid-cols-[auto_minmax(0,1fr)_120px_auto] lg:grid-cols-[auto_minmax(0,1fr)_120px_120px_auto] sm:px-6;
   }
+  .topic-disclosure {
+    @apply inline-flex min-w-0 items-center gap-1.5 text-left font-semibold leading-5 hover:text-primary;
+  }
+  .topic-disclosure svg {
+    @apply size-4 shrink-0 text-muted-foreground transition-transform;
+  }
+  .topic-disclosure svg.expanded {
+    @apply rotate-180;
+  }
+  .topic-disclosure h3 {
+    @apply font-semibold;
+  }
+  .subtopic-panel {
+    @apply border-t bg-muted/25 px-5 py-4 sm:pl-14 sm:pr-6;
+  }
+  .subtopic-intro {
+    @apply mb-3 flex flex-col justify-between gap-2 text-xs sm:flex-row sm:items-end;
+  }
+  .subtopic-intro p + p {
+    @apply mt-1 text-muted-foreground;
+  }
+  .subtopic-intro > span {
+    @apply shrink-0 font-semibold text-primary;
+  }
+  .subtopic-grid {
+    @apply grid gap-2 md:grid-cols-2;
+  }
+  .subtopic-check {
+    @apply flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border bg-card px-3 py-2.5 text-sm transition-colors hover:border-primary/35 hover:bg-primary/5;
+  }
+  .subtopic-check.covered {
+    @apply border-emerald-200 bg-emerald-50/70 text-emerald-900;
+  }
+  .subtopic-check > span {
+    @apply leading-5;
+  }
   .input-label {
     @apply mb-1.5 block text-xs font-semibold text-foreground;
   }
