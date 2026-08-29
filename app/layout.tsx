@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -16,15 +16,26 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: 'Revision Solved',
   title: 'Revision Solved',
   description:
-    'A two-repository revision tracker that shows coverage, due topics, urgency, and revision history.',
+    'A deep revision command center for HDLBits, SystemVerilog, digital design, C++, and scripting.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Revision Solved',
+    statusBarStyle: 'black-translucent',
+  },
   alternates: { canonical: siteUrl },
   openGraph: {
     type: 'website',
     url: siteUrl,
     title: 'Revision Solved',
-    description: 'Know what to revise next across both study repositories.',
+    description:
+      'Know what to revise next across HDLBits and all four study repositories.',
     images: [
       {
         url: `${siteUrl}/og.png`,
@@ -37,9 +48,15 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Revision Solved',
-    description: 'Know what to revise next across both study repositories.',
+    description:
+      'Know what to revise next across HDLBits and all four study repositories.',
     images: [`${siteUrl}/og.png`],
   },
+};
+
+export const viewport: Viewport = {
+  colorScheme: 'light',
+  themeColor: '#002060',
 };
 
 export default function RootLayout({

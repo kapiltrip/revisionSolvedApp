@@ -1,4 +1,5 @@
-import { addDays, getRevisionStore } from '@/lib/revision-store';
+import { getRevisionStore } from '@/lib/revision-store';
+import { scheduleRevision, type RecallMark } from '@/lib/revision-engine';
 import { subtopicSeedsForTopic } from '@/data/subtopic-seed';
 
 function stringField(value: unknown, fallback = '') {
@@ -286,18 +287,24 @@ export async function POST(request: Request) {
       }
 
       const recallStreak = Number(topic.recall_streak ?? 0);
-      const interval =
-        mark === 'M'
-          ? Number(settings?.missed_interval_days ?? 1)
-          : mark === 'H'
-            ? Number(settings?.hesitant_interval_days ?? 3)
-            : recallStreak === 0
-              ? Number(settings?.recalled_first_days ?? 7)
-              : recallStreak === 1
-                ? Number(settings?.recalled_second_days ?? 14)
-                : Number(settings?.recalled_mastered_days ?? 30);
-      const nextDueAt = addDays(revisedAt, interval);
-      const nextStreak = mark === 'R' ? recallStreak + 1 : 0;
+      const schedule = scheduleRevision({
+        mark: mark as RecallMark,
+        recallStreak,
+        revisedAt,
+        settings: {
+          urgent_window_days: 0,
+          yellow_window_days: 3,
+          missed_interval_days: Number(settings?.missed_interval_days ?? 1),
+          hesitant_interval_days: Number(settings?.hesitant_interval_days ?? 3),
+          recalled_first_days: Number(settings?.recalled_first_days ?? 7),
+          recalled_second_days: Number(settings?.recalled_second_days ?? 14),
+          recalled_mastered_days: Number(
+            settings?.recalled_mastered_days ?? 30,
+          ),
+        },
+      });
+      const nextDueAt = schedule.nextDueAt;
+      const nextStreak = schedule.nextRecallStreak;
       const status = mark === 'R' ? 'covered' : 'in_progress';
       const priorCount = Number(topic.revision_count ?? 0);
       const priorEstimate = Number(topic.estimated_minutes ?? 30);

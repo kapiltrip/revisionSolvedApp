@@ -3,7 +3,8 @@ export type TopicSeed = {
   repository:
     | 'revision-solved'
     | 'systemverilog-from-beginning'
-    | 'cpp-and-scripting-practice';
+    | 'cpp-and-scripting-practice'
+    | 'hdlbits';
   subject: string;
   title: string;
   priority: 'high' | 'medium' | 'normal';
@@ -16,6 +17,10 @@ const systemVerilogUrl =
   'https://github.com/kapiltrip/systemverilog-from-beginning';
 const cppAndScriptingUrl =
   'https://github.com/kapiltrip/cpp-and-scripting-practice';
+const hdlBitsRevisionSheetUrl =
+  'https://github.com/kapiltrip/hdlBits/blob/main/HDLBits%20Attempt%201/REVISION_SHEET.md';
+const hdlBitsMistakesUrl =
+  'https://github.com/kapiltrip/hdlBits/blob/main/HDLBits%20Attempt%201/study/Mistakes.md';
 
 export const topicSeeds: TopicSeed[] = [
   {
@@ -469,6 +474,184 @@ export const topicSeeds: TopicSeed[] = [
     priority: 'high',
     targetDate: '2026-09-19',
     sourceUrl: systemVerilogUrl,
+  },
+
+  // HDLBits is represented by the real 17-batch recall plan in Kapil's
+  // archive, rather than by one coarse topic. The dates below begin a fresh
+  // revision pass from 30 August 2026; completing a revision lets the app's
+  // R/H/M scheduler take over subsequent dates.
+  {
+    id: 'hdlbits-b01-foundations',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Verilog',
+    title: 'B01 · Verilog foundations — problems 001–017, 151–152',
+    priority: 'high',
+    targetDate: '2026-08-30',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b02-modules-procedures',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Verilog',
+    title: 'B02 · Modules and procedural blocks — problems 018–034',
+    priority: 'high',
+    targetDate: '2026-08-31',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b03-features-gates',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Combinational',
+    title: 'B03 · Advanced Verilog and basic gates I — problems 035–050',
+    priority: 'high',
+    targetDate: '2026-09-01',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b04-gates-muxes',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Combinational',
+    title: 'B04 · Basic gates II and multiplexers — problems 051–063',
+    priority: 'high',
+    targetDate: '2026-09-02',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b05-arithmetic-kmaps',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Combinational',
+    title: 'B05 · Arithmetic circuits and Karnaugh maps — problems 064–078',
+    priority: 'high',
+    targetDate: '2026-09-03',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b06-latches-dffs',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Sequential',
+    title: 'B06 · Latches, DFFs, reset and enable — problems 079–088',
+    priority: 'high',
+    targetDate: '2026-09-04',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b07-edges-counters',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Sequential',
+    title:
+      'B07 · DFF applications, edge detection and counters — problems 089–100',
+    priority: 'high',
+    targetDate: '2026-09-05',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b08-shift-lfsr',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Sequential',
+    title: 'B08 · Shift registers, rotators and LFSRs — problems 101–109',
+    priority: 'high',
+    targetDate: '2026-09-06',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b09-fsm-foundations',
+    repository: 'hdlbits',
+    subject: 'HDLBits · FSM',
+    title: 'B09 · FSM foundations and Lemmings 1 — problems 110–119',
+    priority: 'high',
+    targetDate: '2026-09-07',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b10-debug-waveforms-1',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Debug',
+    title: 'B10 · Debugging and waveform circuits I — problems 122–132',
+    priority: 'high',
+    targetDate: '2026-09-08',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b11-waveforms-testbenches',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Debug',
+    title: 'B11 · Waveform circuits II and testbenches — problems 133–141',
+    priority: 'high',
+    targetDate: '2026-09-09',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b12-advanced-counters',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Sequential',
+    title: 'B12 · Advanced counters and combined designs — problems 143–150',
+    priority: 'high',
+    targetDate: '2026-09-10',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b13-fsm-timer',
+    repository: 'hdlbits',
+    subject: 'HDLBits · FSM',
+    title: 'B13 · FSM exam set and complete timer — problems 121, 142, 153–158',
+    priority: 'high',
+    targetDate: '2026-09-11',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b14-lemmings-serial',
+    repository: 'hdlbits',
+    subject: 'HDLBits · FSM',
+    title: 'B14 · Lemmings, one-hot FSM and serial receiver — problems 159–164',
+    priority: 'high',
+    targetDate: '2026-09-12',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b15-protocol-datapaths',
+    repository: 'hdlbits',
+    subject: 'HDLBits · FSM',
+    title: 'B15 · Parity, PS/2, HDLC and complementers — problems 165–170',
+    priority: 'high',
+    targetDate: '2026-09-13',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b16-fsm-equations-arbiter',
+    repository: 'hdlbits',
+    subject: 'HDLBits · FSM',
+    title:
+      'B16 · Advanced FSM equations and arbiter — problems 171–174, 177–178',
+    priority: 'high',
+    targetDate: '2026-09-14',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-b17-cellular-automata',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Sequential',
+    title: 'B17 · Cellular automata and Conway Life — problems 175–176, 179',
+    priority: 'high',
+    targetDate: '2026-09-15',
+    sourceUrl: hdlBitsRevisionSheetUrl,
+  },
+  {
+    id: 'hdlbits-weaknesses-01-12',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Weakness Lab',
+    title: 'Weakness lab 01–12 · Syntax through testbench reasoning',
+    priority: 'high',
+    targetDate: '2026-09-16',
+    sourceUrl: hdlBitsMistakesUrl,
+  },
+  {
+    id: 'hdlbits-weaknesses-13-24',
+    repository: 'hdlbits',
+    subject: 'HDLBits · Weakness Lab',
+    title: 'Weakness lab 13–24 · Timer, protocols, FSM equations and Life',
+    priority: 'high',
+    targetDate: '2026-09-17',
+    sourceUrl: hdlBitsMistakesUrl,
   },
 
   {

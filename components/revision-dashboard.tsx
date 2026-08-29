@@ -15,11 +15,17 @@ import {
   ExternalLink,
   Flame,
   Gauge,
+  GitBranch,
+  Layers3,
   Pencil,
   Plus,
   RotateCcw,
   Search,
   Settings2,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TerminalSquare,
   Zap,
 } from 'lucide-react';
 
@@ -42,13 +48,21 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { PwaInstallButton } from '@/components/pwa-install';
+import {
+  daysUntil,
+  localDate,
+  urgencyForTopic,
+  type RevisionTimingSettings,
+} from '@/lib/revision-engine';
 
 type Urgency = 'urgent' | 'soon' | 'ready';
 type Mood = 'drained' | 'foggy' | 'steady' | 'energized';
 type Repository =
   | 'revision-solved'
   | 'systemverilog-from-beginning'
-  | 'cpp-and-scripting-practice';
+  | 'cpp-and-scripting-practice'
+  | 'hdlbits';
 
 type Topic = {
   id: string;
@@ -93,15 +107,7 @@ type Revision = {
   mood: Mood;
 };
 
-type RevisionSettings = {
-  urgent_window_days: number;
-  yellow_window_days: number;
-  missed_interval_days: number;
-  hesitant_interval_days: number;
-  recalled_first_days: number;
-  recalled_second_days: number;
-  recalled_mastered_days: number;
-};
+type RevisionSettings = RevisionTimingSettings;
 
 const defaultSettings: RevisionSettings = {
   urgent_window_days: 0,
@@ -113,10 +119,62 @@ const defaultSettings: RevisionSettings = {
   recalled_mastered_days: 30,
 };
 
-const repoLabels = {
-  'revision-solved': 'RevisionSolved',
-  'systemverilog-from-beginning': 'SystemVerilog from Beginning',
-  'cpp-and-scripting-practice': 'C++ & Scripting Practice',
+const repositoryMeta: Record<
+  Repository,
+  {
+    label: string;
+    shortLabel: string;
+    description: string;
+    url: string;
+    accentClass: string;
+  }
+> = {
+  'revision-solved': {
+    label: 'RevisionSolved',
+    shortLabel: 'Core notes',
+    description: 'Digital design, protocols, timing, CMOS and architecture.',
+    url: 'https://github.com/kapiltrip/RevisionAtlas',
+    accentClass: 'repo-accent-navy',
+  },
+  'systemverilog-from-beginning': {
+    label: 'SystemVerilog from Beginning',
+    shortLabel: 'SV practice',
+    description: 'Language, assertions and functional coverage practice.',
+    url: 'https://github.com/kapiltrip/systemverilog-from-beginning',
+    accentClass: 'repo-accent-blue',
+  },
+  'cpp-and-scripting-practice': {
+    label: 'C++ & Scripting Practice',
+    shortLabel: 'Automation',
+    description: 'Modern C++, Perl, shell, regex and EDA automation.',
+    url: 'https://github.com/kapiltrip/cpp-and-scripting-practice',
+    accentClass: 'repo-accent-green',
+  },
+  hdlbits: {
+    label: 'HDLBits',
+    shortLabel: '178 problems',
+    description: 'Solved RTL archive, revision batches and weakness lab.',
+    url: 'https://github.com/kapiltrip/hdlBits',
+    accentClass: 'repo-accent-orange',
+  },
+};
+
+const repositories = Object.keys(repositoryMeta) as Repository[];
+const repoLabels = Object.fromEntries(
+  repositories.map((repository) => [
+    repository,
+    repositoryMeta[repository].label,
+  ]),
+) as Record<Repository, string>;
+
+const hdlBitsLinks = {
+  repository: 'https://github.com/kapiltrip/hdlBits',
+  revisionSheet:
+    'https://github.com/kapiltrip/hdlBits/blob/main/HDLBits%20Attempt%201/REVISION_SHEET.md',
+  archive:
+    'https://github.com/kapiltrip/hdlBits/blob/main/HDLBits%20Attempt%201/study/README.md',
+  mistakes:
+    'https://github.com/kapiltrip/hdlBits/blob/main/HDLBits%20Attempt%201/study/Mistakes.md',
 };
 
 function subtopicIsCovered(subtopic: Subtopic) {
@@ -150,27 +208,8 @@ const moodOptions = [
   },
 ];
 
-function localDate() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-
-function daysUntil(date: string) {
-  const target = new Date(`${date}T00:00:00`).getTime();
-  const today = new Date(`${localDate()}T00:00:00`).getTime();
-  return Math.round((target - today) / 86_400_000);
-}
-
 function urgencyFor(topic: Topic, settings: RevisionSettings): Urgency {
-  if (topic.urgency_override) return topic.urgency_override;
-  const date = topic.next_due_at ?? topic.target_date;
-  if (topic.confidence === 'M') return 'urgent';
-  if (topic.confidence === 'H') return 'soon';
-  if (!date) return topic.priority === 'high' ? 'urgent' : 'soon';
-  const days = daysUntil(date);
-  if (days <= settings.urgent_window_days) return 'urgent';
-  if (days <= settings.yellow_window_days) return 'soon';
-  return 'ready';
+  return urgencyForTopic(topic, settings);
 }
 
 function formatDate(date: string | null, fallback = 'Not scheduled') {
@@ -204,6 +243,14 @@ function statusLabel(topic: Topic) {
   if (topic.status === 'covered') return 'Covered';
   if (topic.status === 'in_progress') return 'In progress';
   return 'Not covered';
+}
+
+function topicContext(topic: Topic) {
+  const subject =
+    topic.repository === 'hdlbits'
+      ? topic.subject.replace(/^HDLBits · /, '')
+      : topic.subject;
+  return `${repoLabels[topic.repository]} · ${subject}`;
 }
 
 function reasonFor(topic: Topic, settings: RevisionSettings) {
@@ -435,6 +482,58 @@ export function RevisionDashboard() {
     );
   }, [revisions, settings, topics]);
 
+  const repositoryStats = useMemo(
+    () =>
+      repositories.map((repository) => {
+        const repositoryTopics = topics.filter(
+          (topic) => topic.repository === repository,
+        );
+        const covered = repositoryTopics.filter(
+          (topic) => topic.status === 'covered',
+        ).length;
+        const urgent = repositoryTopics.filter(
+          (topic) => urgencyFor(topic, settings) === 'urgent',
+        ).length;
+        const next = [...repositoryTopics]
+          .filter((topic) => topic.status !== 'covered')
+          .sort((a, b) => {
+            const aDate = a.next_due_at ?? a.target_date ?? '9999-12-31';
+            const bDate = b.next_due_at ?? b.target_date ?? '9999-12-31';
+            return aDate.localeCompare(bDate);
+          })[0];
+        return {
+          repository,
+          total: repositoryTopics.length,
+          covered,
+          urgent,
+          next,
+        };
+      }),
+    [settings, topics],
+  );
+
+  const hdlBitsStats = useMemo(() => {
+    const hdlTopics = prioritized.filter(
+      (topic) => topic.repository === 'hdlbits',
+    );
+    const hdlTopicIds = new Set(hdlTopics.map((topic) => topic.id));
+    const hdlChecks = subtopics.filter((subtopic) =>
+      hdlTopicIds.has(subtopic.topic_id),
+    );
+    const next = hdlTopics.find((topic) => topic.status !== 'covered');
+    return {
+      topics: hdlTopics,
+      coveredTopics: hdlTopics.filter((topic) => topic.status === 'covered')
+        .length,
+      completedChecks: hdlChecks.filter(subtopicIsCovered).length,
+      totalChecks: hdlChecks.length,
+      urgent: hdlTopics.filter(
+        (topic) => urgencyFor(topic, settings) === 'urgent',
+      ).length,
+      next,
+    };
+  }, [prioritized, settings, subtopics]);
+
   const filteredTopics = useMemo(() => {
     const query = search.trim().toLowerCase();
     return prioritized.filter((topic) => {
@@ -454,6 +553,17 @@ export function RevisionDashboard() {
   const recentRevisions = revisions.slice(0, 6);
   const lastRevision = recentRevisions[0];
   const lastTopic = lastRevision ? topicById.get(lastRevision.topic_id) : null;
+
+  function showRepository(repository: Repository) {
+    setRepoFilter(repository);
+    setStatusFilter('all');
+    setSearch('');
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById('topic-observatory')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 
   function beginRevision(topic: Topic) {
     setSelectedTopic(topic);
@@ -718,6 +828,16 @@ export function RevisionDashboard() {
             >
               <ExternalLink /> App code
             </a>
+            <PwaInstallButton />
+            <Button
+              size="icon"
+              variant="outline"
+              className="size-10 rounded-xl sm:hidden"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Tune urgency and recall timing"
+            >
+              <Settings2 />
+            </Button>
             <Button
               variant="outline"
               className="hidden h-10 rounded-xl sm:inline-flex"
@@ -726,10 +846,11 @@ export function RevisionDashboard() {
               <Settings2 /> Tune urgency
             </Button>
             <Button
-              className="h-10 rounded-xl px-4"
+              className="h-10 rounded-xl px-3 sm:px-4"
               onClick={() => setAddOpen(true)}
+              aria-label="Add topic"
             >
-              <Plus /> Add topic
+              <Plus /> <span className="hidden sm:inline">Add topic</span>
             </Button>
           </div>
         </div>
@@ -749,35 +870,23 @@ export function RevisionDashboard() {
               Your revision observation room.
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              See the whole syllabus, protect weak memories, and turn
-              today&apos;s available energy into one realistic session.
+              See the whole syllabus across four repositories, protect weak
+              memories, and turn today&apos;s available energy into one
+              realistic session.
             </p>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
-            <a
-              href="https://github.com/kapiltrip/RevisionAtlas"
-              target="_blank"
-              rel="noreferrer"
-              className="repo-link"
-            >
-              RevisionSolved <ExternalLink />
-            </a>
-            <a
-              href="https://github.com/kapiltrip/systemverilog-from-beginning"
-              target="_blank"
-              rel="noreferrer"
-              className="repo-link"
-            >
-              SystemVerilog <ExternalLink />
-            </a>
-            <a
-              href="https://github.com/kapiltrip/cpp-and-scripting-practice"
-              target="_blank"
-              rel="noreferrer"
-              className="repo-link"
-            >
-              C++ &amp; Scripting <ExternalLink />
-            </a>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex xl:w-auto">
+            {repositories.map((repository) => (
+              <a
+                key={repository}
+                href={repositoryMeta[repository].url}
+                target="_blank"
+                rel="noreferrer"
+                className="repo-link"
+              >
+                {repositoryMeta[repository].shortLabel} <ExternalLink />
+              </a>
+            ))}
           </div>
         </section>
 
@@ -1037,7 +1146,7 @@ export function RevisionDashboard() {
                 iconClass="bg-[#fff4cf] text-[#8a6500]"
                 label="Not covered"
                 value={metrics.untouched}
-                note="Blind spots across both repositories"
+                note="Blind spots across all four repositories"
               />
               <MetricCard
                 icon={<Flame />}
@@ -1062,6 +1171,257 @@ export function RevisionDashboard() {
                     : 'Record one to start the memory clock'
                 }
               />
+            </section>
+
+            <section
+              className="mt-7"
+              aria-labelledby="repository-health-heading"
+            >
+              <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary/60">
+                    Source intelligence
+                  </p>
+                  <h2
+                    id="repository-health-heading"
+                    className="mt-1 font-heading text-xl font-bold"
+                  >
+                    Four repositories. One memory system.
+                  </h2>
+                </div>
+                <p className="max-w-xl text-xs leading-5 text-muted-foreground sm:text-right">
+                  Each card is a live view of its seeded learning ledger. Open
+                  one to isolate its queue without losing the global plan.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {repositoryStats.map((stat) => {
+                  const meta = repositoryMeta[stat.repository];
+                  const progress = stat.total
+                    ? (stat.covered / stat.total) * 100
+                    : 0;
+                  return (
+                    <article
+                      key={stat.repository}
+                      className={`repo-ledger-card ${meta.accentClass}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="repo-ledger-icon">
+                          <GitBranch />
+                        </div>
+                        <Badge variant="outline">{stat.urgent} urgent</Badge>
+                      </div>
+                      <h3 className="mt-4 font-heading text-base font-bold">
+                        {meta.label}
+                      </h3>
+                      <p className="mt-1 min-h-10 text-xs leading-5 text-muted-foreground">
+                        {meta.description}
+                      </p>
+                      <div className="mt-4 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-2xl font-bold tracking-tight">
+                            {stat.covered}
+                            <span className="text-sm text-muted-foreground">
+                              {' '}
+                              / {stat.total}
+                            </span>
+                          </p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            topics recalled
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="ledger-open"
+                          onClick={() => showRepository(stat.repository)}
+                        >
+                          Open ledger <ArrowUpRight />
+                        </button>
+                      </div>
+                      <Progress
+                        className="mt-3 h-1.5"
+                        value={progress}
+                        aria-label={`${meta.label} topic coverage`}
+                      />
+                      <p className="mt-3 truncate text-xs text-muted-foreground">
+                        Next: {stat.next?.title ?? 'Queue complete'}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section
+              className="hdlbits-command mt-7"
+              aria-labelledby="hdlbits-command-heading"
+            >
+              <div className="hdlbits-command-main">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div className="flex items-start gap-3">
+                    <div className="hdlbits-mark" aria-hidden="true">
+                      <TerminalSquare />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.17em] text-orange-200">
+                        HDLBits command center
+                      </p>
+                      <h2
+                        id="hdlbits-command-heading"
+                        className="mt-1 font-heading text-2xl font-bold tracking-tight"
+                      >
+                        Recall the design. Don&apos;t recognize the solution.
+                      </h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100/75">
+                        Your complete HDLBits archive is now a first-class
+                        revision track: 178 solved problems, 17 focused batches,
+                        and the exact 24 weaknesses recorded while solving them.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={hdlBitsLinks.repository}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hdlbits-source-link"
+                  >
+                    Open repository <ExternalLink />
+                  </a>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="hdlbits-stat">
+                    <b>178 / 178</b>
+                    <span>archived problems</span>
+                  </div>
+                  <div className="hdlbits-stat">
+                    <b>17</b>
+                    <span>recall batches</span>
+                  </div>
+                  <div className="hdlbits-stat">
+                    <b>24 / 24</b>
+                    <span>weakness themes</span>
+                  </div>
+                  <div className="hdlbits-stat">
+                    <b>{hdlBitsStats.completedChecks}</b>
+                    <span>of {hdlBitsStats.totalChecks} app checks</span>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                    <ShieldCheck className="size-4 text-orange-200" />
+                    Non-negotiable revision loop
+                  </div>
+                  <ol className="hdlbits-loop">
+                    <li>
+                      <span>1</span>
+                      <div>
+                        <b>Attempt blind</b>
+                        <p>Do not open the saved `.sv` first.</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span>2</span>
+                      <div>
+                        <b>Run the proof</b>
+                        <p>Compile or submit; do not judge by appearance.</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span>3</span>
+                      <div>
+                        <b>Find mismatch one</b>
+                        <p>Localize the first wrong signal and cycle.</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span>4</span>
+                      <div>
+                        <b>Write the exact rule</b>
+                        <p>Record the causal mistake, not “unclear.”</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span>5</span>
+                      <div>
+                        <b>Rate recall</b>
+                        <p>R, H or M schedules the next attempt.</p>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              <aside className="hdlbits-next">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="grid size-10 place-items-center rounded-xl bg-orange-100 text-orange-800">
+                    <Target className="size-5" />
+                  </div>
+                  <Badge
+                    className="border-orange-200 bg-orange-50 text-orange-800"
+                    variant="outline"
+                  >
+                    {hdlBitsStats.urgent} urgent
+                  </Badge>
+                </div>
+                <p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-primary/60">
+                  Next HDLBits recall
+                </p>
+                <h3 className="mt-2 font-heading text-lg font-bold leading-6">
+                  {hdlBitsStats.next?.title ?? 'All HDLBits batches recalled'}
+                </h3>
+                {hdlBitsStats.next && (
+                  <>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {reasonFor(hdlBitsStats.next, settings)}. Expected{' '}
+                      {formatMinutes(hdlBitsStats.next.estimated_minutes)}.
+                    </p>
+                    <Button
+                      className="mt-4 w-full rounded-xl"
+                      onClick={() => beginRevision(hdlBitsStats.next!)}
+                    >
+                      <Sparkles /> Start blind recall
+                    </Button>
+                  </>
+                )}
+                <Button
+                  className="mt-2 w-full rounded-xl"
+                  variant="outline"
+                  onClick={() => showRepository('hdlbits')}
+                >
+                  <Layers3 /> View all {hdlBitsStats.topics.length} tracks
+                </Button>
+
+                <div className="mt-5 border-t pt-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                    Deep links
+                  </p>
+                  <div className="mt-2 grid gap-1.5">
+                    <a
+                      href={hdlBitsLinks.revisionSheet}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Revision sheet <ArrowUpRight />
+                    </a>
+                    <a
+                      href={hdlBitsLinks.archive}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      178-problem archive <ArrowUpRight />
+                    </a>
+                    <a
+                      href={hdlBitsLinks.mistakes}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      24-theme mistakes lab <ArrowUpRight />
+                    </a>
+                  </div>
+                </div>
+              </aside>
             </section>
 
             <section className="mt-7 grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
@@ -1171,7 +1531,10 @@ export function RevisionDashboard() {
               </aside>
             </section>
 
-            <section className="mt-7 rounded-2xl border bg-card shadow-[0_12px_40px_rgb(27_49_77/4%)]">
+            <section
+              id="topic-observatory"
+              className="mt-7 scroll-mt-24 rounded-2xl border bg-card shadow-[0_12px_40px_rgb(27_49_77/4%)]"
+            >
               <div className="border-b p-5 sm:p-6">
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
                   <div>
@@ -1203,15 +1566,11 @@ export function RevisionDashboard() {
                       <NativeSelectOption value="all">
                         All repositories
                       </NativeSelectOption>
-                      <NativeSelectOption value="revision-solved">
-                        RevisionSolved
-                      </NativeSelectOption>
-                      <NativeSelectOption value="systemverilog-from-beginning">
-                        SystemVerilog
-                      </NativeSelectOption>
-                      <NativeSelectOption value="cpp-and-scripting-practice">
-                        C++ &amp; Scripting
-                      </NativeSelectOption>
+                      {repositories.map((repository) => (
+                        <NativeSelectOption key={repository} value={repository}>
+                          {repositoryMeta[repository].label}
+                        </NativeSelectOption>
+                      ))}
                     </NativeSelect>
                     <NativeSelect
                       className="w-full sm:w-36"
@@ -1279,7 +1638,7 @@ export function RevisionDashboard() {
                             </Badge>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {repoLabels[topic.repository]} · {topic.subject} ·{' '}
+                            {topicContext(topic)} ·{' '}
                             {formatMinutes(
                               Number(topic.estimated_minutes || 30),
                             )}{' '}
@@ -1549,15 +1908,11 @@ export function RevisionDashboard() {
                   name="repository"
                   className="w-full"
                 >
-                  <NativeSelectOption value="revision-solved">
-                    RevisionSolved
-                  </NativeSelectOption>
-                  <NativeSelectOption value="systemverilog-from-beginning">
-                    SystemVerilog from Beginning
-                  </NativeSelectOption>
-                  <NativeSelectOption value="cpp-and-scripting-practice">
-                    C++ &amp; Scripting Practice
-                  </NativeSelectOption>
+                  {repositories.map((repository) => (
+                    <NativeSelectOption key={repository} value={repository}>
+                      {repositoryMeta[repository].label}
+                    </NativeSelectOption>
+                  ))}
                 </NativeSelect>
               </Field>
               <Field id="topic-priority" label="Priority">

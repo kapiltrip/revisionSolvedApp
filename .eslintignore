@@ -1,0 +1,8 @@
+# Generated/reusable shadcn primitives are maintained as upstream-compatible
+# source. Lint the product code that composes them instead.
+components/ui/**
+hooks/use-mobile.ts
+
+# Generated artifacts and migration snapshots.
+dist/**
+drizzle/meta/**

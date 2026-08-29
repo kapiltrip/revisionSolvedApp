@@ -146,17 +146,25 @@ export async function getRevisionStore() {
     .bind(now)
     .run();
 
-  const latestSeed = topicSeeds.at(-1);
-  const seedExists = latestSeed
+  const seedIds = topicSeeds.map((topic) => topic.id);
+  const existingSeedRows = seedIds.length
     ? await db
-        .prepare('SELECT 1 AS present FROM topics WHERE id = ?')
-        .bind(latestSeed.id)
-        .first<{ present: number }>()
-    : { present: 1 };
+        .prepare(
+          `SELECT id FROM topics WHERE id IN (${seedIds.map(() => '?').join(', ')})`,
+        )
+        .bind(...seedIds)
+        .all<{ id: string }>()
+    : { results: [] as Array<{ id: string }> };
+  const existingSeedIds = new Set(
+    existingSeedRows.results.map((topic) => topic.id),
+  );
+  const missingTopicSeeds = topicSeeds.filter(
+    (topic) => !existingSeedIds.has(topic.id),
+  );
 
-  if (!seedExists) {
+  if (missingTopicSeeds.length) {
     await db.batch(
-      topicSeeds.map((topic) =>
+      missingTopicSeeds.map((topic) =>
         db
           .prepare(
             `INSERT OR IGNORE INTO topics (
