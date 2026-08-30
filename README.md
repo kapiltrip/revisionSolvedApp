@@ -24,12 +24,18 @@ The dashboard is a working surface rather than a static syllabus:
 - ranks topics by due date, recall quality, priority, and manual urgency;
 - shows repository, subject, topic, and subtopic coverage;
 - records R/H/M recall quality, time, mood, proof, reflection, and the next
-  repair;
+  repair, including a reusable mistake category and concrete repair action;
+- runs a reload-safe focus session with a blind-recall evidence sequence and
+  converts the elapsed work directly into a revision observation;
+- measures daily-goal progress, current and best streaks, retention, 14-day
+  activity, memory strength, and the next seven days of study load;
+- turns hesitant and missed recalls into a prioritized repair queue;
 - learns a topic's expected duration from completed sessions;
 - maintains a recent revision trail and a “last time → now” recommendation;
 - supports global scheduling rules and per-topic overrides;
 - adds custom topics to any of the four ledgers;
-- exports the complete database view as a portable JSON backup.
+- exports the complete database view as a portable JSON backup and safely
+  restores a validated backup without deleting newer records.
 
 ## HDLBits command center
 
@@ -76,16 +82,19 @@ serves both platforms and remains easy to update.
 - **Windows:** open the live URL in Chrome and use the install button in the
   address bar or app header.
 
-The installed version opens in a standalone window. The application shell is
-cached for resilience, while `/api` reads and writes always stay network-only
-so stale offline data cannot overwrite the revision database.
+The installed version opens in a standalone window. The application shell and
+last successful read-only dashboard snapshot are cached for resilient offline
+review. All writes remain network-only, and the interface becomes explicitly
+read-only while disconnected so stale data cannot overwrite the revision
+database.
 
 ## Architecture
 
 ```text
 Responsive React PWA
         │
-        ├── adaptive planner + observation dashboard
+        ├── adaptive planner + focus session + observation dashboard
+        ├── memory analytics + load forecast + mistake repair queue
         ├── repository/subject/topic/subtopic views
         └── installable Android and Windows shell
         │
@@ -115,9 +124,11 @@ data/                   versioned topic and subtopic ledgers
 db/                     Drizzle schema
 drizzle/                generated D1 migrations
 lib/revision-engine.ts  tested calendar, urgency, and recall scheduling
+lib/revision-analytics.ts tested streak, load, retention, and memory analysis
+lib/revision-backup.ts  defensive backup validation and normalization
 lib/revision-store.ts   D1 bootstrap and seed reconciliation
-public/sw.js            install/offline application shell
-test/                   scheduling, seed-integrity, and PWA tests
+public/sw.js            install/offline shell and read-only data snapshot
+test/                   engine, analytics, backup, seed, and PWA tests
 ```
 
 ## Local development
@@ -142,10 +153,11 @@ pnpm build
 ```
 
 The automated suite verifies calendar boundaries, urgency precedence, the
-complete R/H/M ladder, uniqueness of every seed identifier, the exact 17 + 2
-HDLBits structure, all 92 HDLBits checks, and the PWA's network-safety rules.
-The final release is also reviewed interactively in Chrome at desktop and
-mobile widths.
+complete R/H/M ladder, memory analytics and streaks, hostile backup rejection,
+safe backup normalization, uniqueness of every seed identifier, the exact 17 +
+2 HDLBits structure, all 92 HDLBits checks, and the PWA's offline/write-safety
+rules. The final release is also reviewed interactively in Chrome at desktop
+and mobile widths, including the reload-safe focus-to-revision workflow.
 
 ## Deployment
 

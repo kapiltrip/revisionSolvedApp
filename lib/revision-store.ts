@@ -36,6 +36,8 @@ const revisionTableSql = `CREATE TABLE IF NOT EXISTS revisions (
   duration_minutes INTEGER NOT NULL DEFAULT 0,
   reflection TEXT NOT NULL DEFAULT '',
   mood TEXT NOT NULL DEFAULT 'steady',
+  mistake_category TEXT NOT NULL DEFAULT 'none',
+  repair_action TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 )`;
 
@@ -48,6 +50,8 @@ const settingsTableSql = `CREATE TABLE IF NOT EXISTS revision_settings (
   recalled_first_days INTEGER NOT NULL DEFAULT 7,
   recalled_second_days INTEGER NOT NULL DEFAULT 14,
   recalled_mastered_days INTEGER NOT NULL DEFAULT 30,
+  daily_goal_minutes INTEGER NOT NULL DEFAULT 60,
+  focus_block_minutes INTEGER NOT NULL DEFAULT 30,
   updated_at TEXT NOT NULL
 )`;
 
@@ -64,13 +68,17 @@ const subtopicTableSql = `CREATE TABLE IF NOT EXISTS subtopics (
 )`;
 
 async function ensureColumns(db: D1Database) {
-  const [topicInfo, revisionInfo] = await Promise.all([
+  const [topicInfo, revisionInfo, settingsInfo] = await Promise.all([
     db.prepare('PRAGMA table_info(topics)').all<{ name: string }>(),
     db.prepare('PRAGMA table_info(revisions)').all<{ name: string }>(),
+    db.prepare('PRAGMA table_info(revision_settings)').all<{ name: string }>(),
   ]);
   const topicColumns = new Set(topicInfo.results.map((column) => column.name));
   const revisionColumns = new Set(
     revisionInfo.results.map((column) => column.name),
+  );
+  const settingsColumns = new Set(
+    settingsInfo.results.map((column) => column.name),
   );
   const statements = [];
 
@@ -107,6 +115,34 @@ async function ensureColumns(db: D1Database) {
       ),
     );
   }
+  if (!revisionColumns.has('mistake_category')) {
+    statements.push(
+      db.prepare(
+        "ALTER TABLE revisions ADD COLUMN mistake_category TEXT NOT NULL DEFAULT 'none'",
+      ),
+    );
+  }
+  if (!revisionColumns.has('repair_action')) {
+    statements.push(
+      db.prepare(
+        "ALTER TABLE revisions ADD COLUMN repair_action TEXT NOT NULL DEFAULT ''",
+      ),
+    );
+  }
+  if (!settingsColumns.has('daily_goal_minutes')) {
+    statements.push(
+      db.prepare(
+        'ALTER TABLE revision_settings ADD COLUMN daily_goal_minutes INTEGER NOT NULL DEFAULT 60',
+      ),
+    );
+  }
+  if (!settingsColumns.has('focus_block_minutes')) {
+    statements.push(
+      db.prepare(
+        'ALTER TABLE revision_settings ADD COLUMN focus_block_minutes INTEGER NOT NULL DEFAULT 30',
+      ),
+    );
+  }
 
   if (statements.length) await db.batch(statements);
 }
@@ -129,6 +165,12 @@ export async function getRevisionStore() {
       'CREATE INDEX IF NOT EXISTS revisions_topic_idx ON revisions(topic_id, revised_at)',
     ),
     db.prepare(
+      'CREATE INDEX IF NOT EXISTS revisions_date_idx ON revisions(revised_at)',
+    ),
+    db.prepare(
+      'CREATE INDEX IF NOT EXISTS topics_repository_idx ON topics(repository, status)',
+    ),
+    db.prepare(
       'CREATE INDEX IF NOT EXISTS subtopics_topic_idx ON subtopics(topic_id, sort_order)',
     ),
   ]);
@@ -140,8 +182,9 @@ export async function getRevisionStore() {
       `INSERT OR IGNORE INTO revision_settings (
         id, urgent_window_days, yellow_window_days, missed_interval_days,
         hesitant_interval_days, recalled_first_days, recalled_second_days,
-        recalled_mastered_days, updated_at
-      ) VALUES ('default', 0, 3, 1, 3, 7, 14, 30, ?)`,
+        recalled_mastered_days, daily_goal_minutes, focus_block_minutes,
+        updated_at
+      ) VALUES ('default', 0, 3, 1, 3, 7, 14, 30, 60, 30, ?)`,
     )
     .bind(now)
     .run();

@@ -4,6 +4,7 @@ import { type SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   ArrowUpRight,
+  BarChart3,
   BatteryLow,
   BookOpenCheck,
   Brain,
@@ -16,8 +17,11 @@ import {
   Flame,
   Gauge,
   GitBranch,
+  HardDriveDownload,
   Layers3,
   Pencil,
+  Pause,
+  Play,
   Plus,
   RotateCcw,
   Search,
@@ -26,6 +30,11 @@ import {
   Sparkles,
   Target,
   TerminalSquare,
+  Timer,
+  Upload,
+  Wifi,
+  WifiOff,
+  Wrench,
   Zap,
 } from 'lucide-react';
 
@@ -49,6 +58,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { PwaInstallButton } from '@/components/pwa-install';
+import { buildLearningAnalytics } from '@/lib/revision-analytics';
 import {
   daysUntil,
   localDate,
@@ -105,9 +115,33 @@ type Revision = {
   duration_minutes: number;
   reflection: string;
   mood: Mood;
+  mistake_category: MistakeCategory;
+  repair_action: string;
+  created_at: string;
 };
 
-type RevisionSettings = RevisionTimingSettings;
+type MistakeCategory =
+  | 'none'
+  | 'syntax'
+  | 'logic'
+  | 'timing'
+  | 'state'
+  | 'interface'
+  | 'verification'
+  | 'memory';
+
+type RevisionSettings = RevisionTimingSettings & {
+  daily_goal_minutes: number;
+  focus_block_minutes: number;
+};
+
+type FocusSession = {
+  topicId: string;
+  totalSeconds: number;
+  remainingSeconds: number;
+  running: boolean;
+  endsAt: number | null;
+};
 
 const defaultSettings: RevisionSettings = {
   urgent_window_days: 0,
@@ -117,7 +151,56 @@ const defaultSettings: RevisionSettings = {
   recalled_first_days: 7,
   recalled_second_days: 14,
   recalled_mastered_days: 30,
+  daily_goal_minutes: 60,
+  focus_block_minutes: 30,
 };
+
+const mistakeOptions: Array<{
+  value: MistakeCategory;
+  label: string;
+  hint: string;
+}> = [
+  { value: 'none', label: 'No specific mistake', hint: 'Recall was clean' },
+  {
+    value: 'syntax',
+    label: 'Syntax / operator',
+    hint: 'Language form was wrong',
+  },
+  {
+    value: 'logic',
+    label: 'Logic / equation',
+    hint: 'Behavioral reasoning failed',
+  },
+  {
+    value: 'timing',
+    label: 'Timing / waveform',
+    hint: 'Cycle or edge was misplaced',
+  },
+  {
+    value: 'state',
+    label: 'State / sequence',
+    hint: 'Transition memory failed',
+  },
+  {
+    value: 'interface',
+    label: 'Interface / protocol',
+    hint: 'Contract or handshake failed',
+  },
+  {
+    value: 'verification',
+    label: 'Verification / proof',
+    hint: 'Test strategy was weak',
+  },
+  {
+    value: 'memory',
+    label: 'Memory lapse',
+    hint: 'Known idea would not surface',
+  },
+];
+
+const mistakeLabels = Object.fromEntries(
+  mistakeOptions.map((option) => [option.value, option.label]),
+) as Record<MistakeCategory, string>;
 
 const repositoryMeta: Record<
   Repository,
@@ -229,6 +312,13 @@ function formatMinutes(minutes: number) {
   return rest ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
+function formatTimer(seconds: number) {
+  const safe = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(safe / 60);
+  const remainder = safe % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+}
+
 function dueCopy(topic: Topic) {
   const date = topic.next_due_at ?? topic.target_date;
   if (!date) return 'No date set';
@@ -287,10 +377,24 @@ export function RevisionDashboard() {
   const [proof, setProof] = useState('');
   const [reflection, setReflection] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
+  const [mistakeCategory, setMistakeCategory] =
+    useState<MistakeCategory>('none');
+  const [repairAction, setRepairAction] = useState('');
   const [studyMinutes, setStudyMinutes] = useState(45);
   const [feeling, setFeeling] = useState<Mood>('steady');
   const [saving, setSaving] = useState(false);
   const [checkingSubtopic, setCheckingSubtopic] = useState<string | null>(null);
+  const [online, setOnline] = useState(true);
+  const [focusOpen, setFocusOpen] = useState(false);
+  const [focusSession, setFocusSession] = useState<FocusSession | null>(null);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [backupPayload, setBackupPayload] = useState('');
+  const [backupFileName, setBackupFileName] = useState('');
+  const [backupSummary, setBackupSummary] = useState<{
+    topics: number;
+    subtopics: number;
+    revisions: number;
+  } | null>(null);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(
     () => new Set(),
   );
@@ -325,6 +429,106 @@ export function RevisionDashboard() {
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadTopics(), 0);
     return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    const updateConnection = () => setOnline(window.navigator.onLine);
+    updateConnection();
+    window.addEventListener('online', updateConnection);
+    window.addEventListener('offline', updateConnection);
+    return () => {
+      window.removeEventListener('online', updateConnection);
+      window.removeEventListener('offline', updateConnection);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('revision-solved-focus-v1');
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as FocusSession;
+      if (
+        typeof parsed.topicId !== 'string' ||
+        !Number.isFinite(parsed.totalSeconds) ||
+        !Number.isFinite(parsed.remainingSeconds)
+      ) {
+        return;
+      }
+      const remaining =
+        parsed.running && parsed.endsAt
+          ? Math.max(0, Math.ceil((parsed.endsAt - Date.now()) / 1000))
+          : Math.max(0, parsed.remainingSeconds);
+      const timeout = window.setTimeout(
+        () =>
+          setFocusSession({
+            ...parsed,
+            remainingSeconds: remaining,
+            running: parsed.running && remaining > 0,
+            endsAt: parsed.running && remaining > 0 ? parsed.endsAt : null,
+          }),
+        0,
+      );
+      return () => window.clearTimeout(timeout);
+    } catch {
+      window.localStorage.removeItem('revision-solved-focus-v1');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!focusSession) {
+      window.localStorage.removeItem('revision-solved-focus-v1');
+      return;
+    }
+    window.localStorage.setItem(
+      'revision-solved-focus-v1',
+      JSON.stringify(focusSession),
+    );
+  }, [focusSession]);
+
+  useEffect(() => {
+    if (!focusSession?.running || !focusSession.endsAt) return;
+    const tick = () => {
+      setFocusSession((current) => {
+        if (!current?.running || !current.endsAt) return current;
+        const remaining = Math.max(
+          0,
+          Math.ceil((current.endsAt - Date.now()) / 1000),
+        );
+        if (remaining === 0) {
+          setMessage('Focus block complete. Record what you could recall.');
+          return {
+            ...current,
+            remainingSeconds: 0,
+            running: false,
+            endsAt: null,
+          };
+        }
+        return { ...current, remainingSeconds: remaining };
+      });
+    };
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [focusSession?.endsAt, focusSession?.running]);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        target?.isContentEditable;
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === '/') {
+        event.preventDefault();
+        document.getElementById('topic-search')?.focus();
+      } else if (event.key.toLowerCase() === 'n') {
+        setAddOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
 
   const topicById = useMemo(
@@ -534,6 +738,32 @@ export function RevisionDashboard() {
     };
   }, [prioritized, settings, subtopics]);
 
+  const learningAnalytics = useMemo(
+    () =>
+      buildLearningAnalytics({
+        revisions,
+        topics,
+        dailyGoalMinutes: settings.daily_goal_minutes,
+      }),
+    [revisions, settings.daily_goal_minutes, topics],
+  );
+
+  const focusTopic = focusSession
+    ? (topicById.get(focusSession.topicId) ?? null)
+    : null;
+  const focusElapsedMinutes = focusSession
+    ? Math.max(
+        0,
+        Math.ceil(
+          (focusSession.totalSeconds - focusSession.remainingSeconds) / 60,
+        ),
+      )
+    : 0;
+  const maxForecastMinutes = Math.max(
+    1,
+    ...learningAnalytics.forecast.map((day) => day.minutes),
+  );
+
   const filteredTopics = useMemo(() => {
     const query = search.trim().toLowerCase();
     return prioritized.filter((topic) => {
@@ -565,19 +795,100 @@ export function RevisionDashboard() {
     });
   }
 
-  function beginRevision(topic: Topic) {
+  function beginRevision(topic: Topic, minutes?: number) {
     setSelectedTopic(topic);
     setMark(topic.confidence ?? 'R');
     setRevisedAt(localDate());
-    setDurationMinutes(Number(topic.estimated_minutes || 30));
+    setDurationMinutes(
+      Math.max(1, minutes ?? Number(topic.estimated_minutes || 30)),
+    );
     setSessionMood(feeling);
     setProof('');
     setReflection('');
     setRevisionNotes('');
+    setMistakeCategory('none');
+    setRepairAction('');
     setError('');
   }
 
+  function startFocus(topic: Topic, minutes?: number) {
+    const totalSeconds =
+      Math.max(
+        5,
+        Math.min(
+          180,
+          Math.round(
+            minutes ?? topic.estimated_minutes ?? settings.focus_block_minutes,
+          ),
+        ),
+      ) * 60;
+    setFocusSession({
+      topicId: topic.id,
+      totalSeconds,
+      remainingSeconds: totalSeconds,
+      running: false,
+      endsAt: null,
+    });
+    setFocusOpen(true);
+  }
+
+  function toggleFocusTimer() {
+    setFocusSession((current) => {
+      if (!current) return current;
+      if (current.running) {
+        const remaining = current.endsAt
+          ? Math.max(0, Math.ceil((current.endsAt - Date.now()) / 1000))
+          : current.remainingSeconds;
+        return {
+          ...current,
+          remainingSeconds: remaining,
+          running: false,
+          endsAt: null,
+        };
+      }
+      if (current.remainingSeconds <= 0) {
+        return {
+          ...current,
+          remainingSeconds: current.totalSeconds,
+          running: true,
+          endsAt: Date.now() + current.totalSeconds * 1000,
+        };
+      }
+      return {
+        ...current,
+        running: true,
+        endsAt: Date.now() + current.remainingSeconds * 1000,
+      };
+    });
+  }
+
+  function resetFocusTimer() {
+    setFocusSession((current) =>
+      current
+        ? {
+            ...current,
+            remainingSeconds: current.totalSeconds,
+            running: false,
+            endsAt: null,
+          }
+        : current,
+    );
+  }
+
+  function finishFocusSession() {
+    if (!focusTopic || !focusSession) return;
+    const minutes = Math.max(1, focusElapsedMinutes);
+    setFocusSession(null);
+    setFocusOpen(false);
+    beginRevision(focusTopic, minutes);
+  }
+
   async function postAction(payload: Record<string, unknown>) {
+    if (!window.navigator.onLine) {
+      throw new Error(
+        'You are offline. Your last dashboard is available, but saving waits for a connection.',
+      );
+    }
     const response = await fetch('/api/topics', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -670,6 +981,8 @@ export function RevisionDashboard() {
         proof,
         reflection,
         notes: revisionNotes,
+        mistakeCategory,
+        repairAction,
       });
       setSelectedTopic(null);
       setMessage(
@@ -764,9 +1077,11 @@ export function RevisionDashboard() {
         recalledFirstDays: form.get('recalledFirstDays'),
         recalledSecondDays: form.get('recalledSecondDays'),
         recalledMasteredDays: form.get('recalledMasteredDays'),
+        dailyGoalMinutes: form.get('dailyGoalMinutes'),
+        focusBlockMinutes: form.get('focusBlockMinutes'),
       });
       setSettingsOpen(false);
-      setMessage('Urgency rules and recall intervals updated.');
+      setMessage('Study goal, focus block, urgency, and recall rules updated.');
       await loadTopics();
     } catch (saveError) {
       setError(
@@ -782,6 +1097,7 @@ export function RevisionDashboard() {
   function exportBackup() {
     const payload = JSON.stringify(
       {
+        schemaVersion: 2,
         exportedAt: new Date().toISOString(),
         settings,
         topics,
@@ -802,8 +1118,86 @@ export function RevisionDashboard() {
     setMessage('Backup exported as JSON.');
   }
 
+  async function selectBackupFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    setBackupPayload('');
+    setBackupSummary(null);
+    setBackupFileName(file?.name ?? '');
+    if (!file) return;
+    if (file.size > 8_000_000) {
+      setError('That backup is larger than the 8 MB safety limit.');
+      return;
+    }
+    try {
+      const payload = await file.text();
+      const parsed = JSON.parse(payload) as Record<string, unknown>;
+      const topics = Array.isArray(parsed.topics) ? parsed.topics.length : 0;
+      const subtopics = Array.isArray(parsed.subtopics)
+        ? parsed.subtopics.length
+        : 0;
+      const revisions = Array.isArray(parsed.revisions)
+        ? parsed.revisions.length
+        : 0;
+      if (
+        !topics ||
+        !Array.isArray(parsed.subtopics) ||
+        !Array.isArray(parsed.revisions)
+      ) {
+        throw new Error('This is not a complete Revision Solved backup.');
+      }
+      setBackupPayload(payload);
+      setBackupSummary({ topics, subtopics, revisions });
+      setError('');
+    } catch (selectionError) {
+      setError(
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'Could not read that backup.',
+      );
+    }
+  }
+
+  async function restoreBackup() {
+    if (!backupPayload) return;
+    setSaving(true);
+    setError('');
+    try {
+      const response = await fetch('/api/backup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: backupPayload,
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        restored?: { topics: number; subtopics: number; revisions: number };
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Could not restore backup.');
+      }
+      setBackupOpen(false);
+      setBackupPayload('');
+      setBackupSummary(null);
+      setBackupFileName('');
+      setMessage(
+        `Backup restored: ${data.restored?.topics ?? 0} topics and ${data.restored?.revisions ?? 0} revision observations merged safely.`,
+      );
+      await loadTopics();
+    } catch (restoreError) {
+      setError(
+        restoreError instanceof Error
+          ? restoreError.message
+          : 'Could not restore backup.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <a href="#main-content" className="skip-link">
+        Skip to revision dashboard
+      </a>
       <header className="sticky top-0 z-30 border-b border-border/80 bg-card/92 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-4 px-5 py-3.5 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
@@ -829,6 +1223,17 @@ export function RevisionDashboard() {
               <ExternalLink /> App code
             </a>
             <PwaInstallButton />
+            <output
+              className={`connection-pill ${online ? 'online' : 'offline'}`}
+              aria-label={
+                online ? 'Online and saving enabled' : 'Offline read-only mode'
+              }
+            >
+              {online ? <Wifi /> : <WifiOff />}
+              <span className="hidden lg:inline">
+                {online ? 'Synced' : 'Offline'}
+              </span>
+            </output>
             <Button
               size="icon"
               variant="outline"
@@ -856,7 +1261,31 @@ export function RevisionDashboard() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1480px] px-5 py-7 lg:px-8">
+      {focusSession && focusTopic && !focusOpen && (
+        <button
+          type="button"
+          className="focus-dock"
+          onClick={() => setFocusOpen(true)}
+          aria-label={`Open focus timer for ${focusTopic.title}`}
+        >
+          <span className="focus-dock-icon">
+            <Timer />
+          </span>
+          <span className="min-w-0 text-left">
+            <b className="block truncate">{focusTopic.title}</b>
+            <small>
+              {formatTimer(focusSession.remainingSeconds)} ·{' '}
+              {focusSession.running ? 'running' : 'paused'}
+            </small>
+          </span>
+          {focusSession.running ? <Pause /> : <Play />}
+        </button>
+      )}
+
+      <div
+        id="main-content"
+        className="mx-auto max-w-[1480px] px-5 py-7 lg:px-8"
+      >
         <section className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-primary/70">
@@ -890,6 +1319,16 @@ export function RevisionDashboard() {
           </div>
         </section>
 
+        {!online && (
+          <output className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <WifiOff className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <b>Offline read mode.</b> Your last loaded dashboard remains
+              available. Reconnect before saving checks, sessions, or settings.
+            </span>
+          </output>
+        )}
+
         {(error || message) && (
           <div
             aria-live="polite"
@@ -912,6 +1351,19 @@ export function RevisionDashboard() {
 
         {loading ? (
           <LoadingDashboard />
+        ) : error && topics.length === 0 ? (
+          <div className="rounded-2xl border bg-card p-8 text-center shadow-sm">
+            <WifiOff className="mx-auto size-8 text-muted-foreground" />
+            <h2 className="mt-4 font-heading text-xl font-bold">
+              The revision ledger could not load
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
+              Check the connection and retry. No progress has been changed.
+            </p>
+            <Button className="mt-5" onClick={() => void loadTopics()}>
+              Try again
+            </Button>
+          </div>
         ) : (
           <>
             <section className="grid gap-6 xl:grid-cols-[1.45fr_.55fr]">
@@ -1038,9 +1490,9 @@ export function RevisionDashboard() {
                           </div>
                           <Button
                             size="sm"
-                            onClick={() => beginRevision(item.topic)}
+                            onClick={() => startFocus(item.topic, item.minutes)}
                           >
-                            Start
+                            <Timer /> Focus
                           </Button>
                         </div>
                       ))}
@@ -1171,6 +1623,221 @@ export function RevisionDashboard() {
                     : 'Record one to start the memory clock'
                 }
               />
+            </section>
+
+            <section
+              className="mt-7"
+              aria-labelledby="memory-intelligence-heading"
+            >
+              <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary/60">
+                    Memory intelligence
+                  </p>
+                  <h2
+                    id="memory-intelligence-heading"
+                    className="mt-1 font-heading text-xl font-bold"
+                  >
+                    Measure recall quality, not just completed pages.
+                  </h2>
+                </div>
+                <Badge variant="outline">
+                  {learningAnalytics.weekSessions} sessions ·{' '}
+                  {formatMinutes(learningAnalytics.weekMinutes)} this week
+                </Badge>
+              </div>
+
+              <div className="memory-intelligence-grid">
+                <article className="memory-overview-card">
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.13em] text-primary/60">
+                        Today&apos;s deliberate practice
+                      </p>
+                      <div className="mt-2 flex items-baseline gap-2">
+                        <b className="text-3xl tracking-tight">
+                          {learningAnalytics.todayMinutes}m
+                        </b>
+                        <span className="text-sm text-muted-foreground">
+                          of {learningAnalytics.dailyGoalMinutes}m goal
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className="daily-goal-ring"
+                      style={{
+                        background: `conic-gradient(#315ea8 ${learningAnalytics.dailyGoalPercent}%, #e7edf7 0)`,
+                      }}
+                      aria-hidden="true"
+                    >
+                      <span>{learningAnalytics.dailyGoalPercent}%</span>
+                    </div>
+                  </div>
+                  <Progress
+                    className="mt-4 h-2"
+                    value={learningAnalytics.dailyGoalPercent}
+                    aria-label={`${learningAnalytics.dailyGoalPercent}% of daily study goal complete`}
+                  />
+
+                  <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="intelligence-stat">
+                      <dt>Memory strength</dt>
+                      <dd>{learningAnalytics.memoryStrength}%</dd>
+                    </div>
+                    <div className="intelligence-stat">
+                      <dt>Clean recall</dt>
+                      <dd>
+                        {learningAnalytics.totalRecalls
+                          ? `${learningAnalytics.retentionRate}%`
+                          : '—'}
+                      </dd>
+                    </div>
+                    <div className="intelligence-stat">
+                      <dt>Current streak</dt>
+                      <dd>{learningAnalytics.currentStreak}d</dd>
+                    </div>
+                    <div className="intelligence-stat">
+                      <dt>Best streak</dt>
+                      <dd>{learningAnalytics.bestStreak}d</dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-5 border-t pt-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                        Last 14 days
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        R {learningAnalytics.recall.R} · H{' '}
+                        {learningAnalytics.recall.H} · M{' '}
+                        {learningAnalytics.recall.M}
+                      </p>
+                    </div>
+                    <figure
+                      className="activity-strip"
+                      aria-label={`Fourteen day activity: ${learningAnalytics.weekMinutes} minutes during the latest seven days`}
+                    >
+                      {learningAnalytics.activity.map((day) => (
+                        <span
+                          key={day.date}
+                          className={`activity-cell intensity-${day.intensity}`}
+                          title={`${formatDate(day.date)}: ${day.minutes} minutes across ${day.sessions} sessions`}
+                        />
+                      ))}
+                    </figure>
+                  </div>
+                </article>
+
+                <article className="forecast-card">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.13em] text-primary/60">
+                        Seven-day load forecast
+                      </p>
+                      <h3 className="mt-1 font-heading text-lg font-bold">
+                        See overload before it arrives.
+                      </h3>
+                    </div>
+                    <BarChart3 className="size-5 text-primary/65" />
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    {learningAnalytics.forecast.map((day, index) => (
+                      <div key={day.date} className="forecast-row">
+                        <div>
+                          <b>
+                            {index === 0
+                              ? 'Today'
+                              : new Intl.DateTimeFormat('en-IN', {
+                                  weekday: 'short',
+                                }).format(new Date(`${day.date}T00:00:00`))}
+                          </b>
+                          <span>
+                            {day.topicIds.length}{' '}
+                            {day.topicIds.length === 1 ? 'topic' : 'topics'}
+                          </span>
+                        </div>
+                        <div className="forecast-track" aria-hidden="true">
+                          <span
+                            style={{
+                              width: `${Math.max(
+                                day.minutes ? 8 : 0,
+                                (day.minutes / maxForecastMinutes) * 100,
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <strong>
+                          {day.minutes ? `${day.minutes}m` : 'clear'}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <aside className="repair-queue-card">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.13em] text-orange-700/70">
+                        Repair queue
+                      </p>
+                      <h3 className="mt-1 font-heading text-lg font-bold">
+                        Turn mistakes into the next drill.
+                      </h3>
+                    </div>
+                    <Wrench className="size-5 text-orange-700" />
+                  </div>
+                  {learningAnalytics.topMistake && (
+                    <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-xs text-orange-900">
+                      Most frequent pattern:{' '}
+                      <b>
+                        {mistakeLabels[
+                          learningAnalytics.topMistake
+                            .category as MistakeCategory
+                        ] ?? learningAnalytics.topMistake.category}
+                      </b>{' '}
+                      ({learningAnalytics.topMistake.count})
+                    </p>
+                  )}
+                  <div className="mt-4 space-y-2.5">
+                    {learningAnalytics.repairQueue.slice(0, 4).map((signal) => {
+                      const topic = topicById.get(signal.topicId);
+                      if (!topic) return null;
+                      return (
+                        <button
+                          key={signal.topicId}
+                          type="button"
+                          className="repair-item"
+                          onClick={() => beginRevision(topic)}
+                        >
+                          <span
+                            className={`mark-orb mark-${signal.mark.toLowerCase()}`}
+                          >
+                            {signal.mark}
+                          </span>
+                          <span className="min-w-0 text-left">
+                            <b className="block truncate">{topic.title}</b>
+                            <small className="line-clamp-1">
+                              {signal.repairAction ||
+                                signal.notes ||
+                                mistakeLabels[
+                                  signal.mistakeCategory as MistakeCategory
+                                ] ||
+                                'Repeat blind and isolate mismatch one'}
+                            </small>
+                          </span>
+                          <ArrowUpRight />
+                        </button>
+                      );
+                    })}
+                    {learningAnalytics.repairQueue.length === 0 && (
+                      <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
+                        Missed and hesitant recalls will become targeted repair
+                        drills here.
+                      </div>
+                    )}
+                  </div>
+                </aside>
+              </div>
             </section>
 
             <section
@@ -1379,7 +2046,12 @@ export function RevisionDashboard() {
                     </p>
                     <Button
                       className="mt-4 w-full rounded-xl"
-                      onClick={() => beginRevision(hdlBitsStats.next!)}
+                      onClick={() =>
+                        startFocus(
+                          hdlBitsStats.next!,
+                          settings.focus_block_minutes,
+                        )
+                      }
                     >
                       <Sparkles /> Start blind recall
                     </Button>
@@ -1518,6 +2190,15 @@ export function RevisionDashboard() {
                               {revision.reflection}
                             </p>
                           )}
+                          {revision.mistake_category &&
+                            revision.mistake_category !== 'none' && (
+                              <p className="mt-1 text-[11px] font-semibold text-orange-700">
+                                {mistakeLabels[revision.mistake_category]}
+                                {revision.repair_action
+                                  ? ` · ${revision.repair_action}`
+                                  : ''}
+                              </p>
+                            )}
                         </div>
                       </div>
                     );
@@ -1543,13 +2224,15 @@ export function RevisionDashboard() {
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {filteredTopics.length} of {topics.length} topics · every
-                      date, memory mark, estimate, and override
+                      date, memory mark, estimate, and override · press / to
+                      search
                     </p>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_auto_auto]">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
+                        id="topic-search"
                         className="h-10 rounded-xl pl-9"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
@@ -1683,6 +2366,16 @@ export function RevisionDashboard() {
                             <Pencil />
                           </Button>
                           <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() =>
+                              startFocus(topic, settings.focus_block_minutes)
+                            }
+                            aria-label={`Start focus timer for ${topic.title}`}
+                          >
+                            <Timer />
+                          </Button>
+                          <Button
                             size="sm"
                             variant="outline"
                             onClick={() => beginRevision(topic)}
@@ -1750,13 +2443,203 @@ export function RevisionDashboard() {
                 {settings.yellow_window_days}d · Green after that. Per-topic
                 overrides always win.
               </p>
-              <Button variant="ghost" size="sm" onClick={exportBackup}>
-                <Download /> Export complete backup
-              </Button>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBackupOpen(true)}
+                >
+                  <Upload /> Restore backup
+                </Button>
+                <Button variant="ghost" size="sm" onClick={exportBackup}>
+                  <Download /> Export complete backup
+                </Button>
+              </div>
             </div>
           </>
         )}
       </div>
+
+      <Dialog
+        open={focusOpen && Boolean(focusSession && focusTopic)}
+        onOpenChange={setFocusOpen}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          {focusSession && focusTopic && (
+            <div>
+              <DialogHeader>
+                <DialogTitle className="text-xl">
+                  Blind recall focus
+                </DialogTitle>
+                <DialogDescription>
+                  {focusTopic.title} · {topicContext(focusTopic)}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="focus-session-panel">
+                <div className="focus-timer" role="timer" aria-live="off">
+                  {formatTimer(focusSession.remainingSeconds)}
+                </div>
+                <p className="mt-2 text-center text-xs text-blue-100/70">
+                  {focusSession.running
+                    ? 'Timer is running. Stay with mismatch one.'
+                    : focusSession.remainingSeconds === 0
+                      ? 'Block complete. Capture evidence while it is fresh.'
+                      : 'Start when notes and saved HDL are closed.'}
+                </p>
+                <Progress
+                  className="mt-4 h-2 bg-white/15"
+                  value={
+                    ((focusSession.totalSeconds -
+                      focusSession.remainingSeconds) /
+                      focusSession.totalSeconds) *
+                    100
+                  }
+                  aria-label={`${focusElapsedMinutes} focus minutes elapsed`}
+                />
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={toggleFocusTimer}
+                    className="min-w-28 bg-white text-primary hover:bg-blue-50"
+                  >
+                    {focusSession.running ? <Pause /> : <Play />}
+                    {focusSession.running ? 'Pause' : 'Start'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetFocusTimer}
+                    className="border-white/25 bg-white/8 text-white hover:bg-white/15 hover:text-white"
+                  >
+                    <RotateCcw /> Reset
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border bg-muted/35 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                    Evidence sequence
+                  </p>
+                  <ol className="mt-3 space-y-2 text-sm">
+                    <li>1. Attempt from memory before opening the source.</li>
+                    <li>
+                      2. Compile, simulate, draw, or explain the behavior.
+                    </li>
+                    <li>3. Stop at the first mismatch and name its cause.</li>
+                    <li>4. Record one concrete repair before rating recall.</li>
+                  </ol>
+                </div>
+                <div className="rounded-xl border bg-muted/35 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                    Next uncovered checks
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm">
+                    {(subtopicsByTopic.get(focusTopic.id) ?? [])
+                      .filter((subtopic) => !subtopicIsCovered(subtopic))
+                      .slice(0, 4)
+                      .map((subtopic) => (
+                        <li key={subtopic.id} className="flex gap-2">
+                          <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                          <span>{subtopic.label}</span>
+                        </li>
+                      ))}
+                    {(subtopicsByTopic.get(focusTopic.id) ?? []).every(
+                      subtopicIsCovered,
+                    ) && (
+                      <li className="text-muted-foreground">
+                        All quick checks are covered. Prove the complete topic
+                        blind.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+
+              <DialogFooter className="mt-6 gap-2 sm:justify-between">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setFocusSession(null);
+                    setFocusOpen(false);
+                  }}
+                >
+                  End without recording
+                </Button>
+                <Button type="button" onClick={finishFocusSession}>
+                  <CheckCircle2 /> Finish and record evidence
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={backupOpen} onOpenChange={setBackupOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              Restore a Revision Solved backup
+            </DialogTitle>
+            <DialogDescription>
+              Select an exported JSON backup. Matching records return to the
+              backed-up state; records absent from the file are kept, never
+              deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="backup-drop" htmlFor="backup-file">
+            <HardDriveDownload />
+            <span>
+              <b>{backupFileName || 'Choose a JSON backup'}</b>
+              <small>Maximum 8 MB · validated before anything is merged</small>
+            </span>
+            <Input
+              id="backup-file"
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => void selectBackupFile(event)}
+            />
+          </label>
+          {backupSummary && (
+            <output className="mt-4 grid grid-cols-3 gap-2">
+              <div className="backup-stat">
+                <b>{backupSummary.topics}</b>
+                <span>topics</span>
+              </div>
+              <div className="backup-stat">
+                <b>{backupSummary.subtopics}</b>
+                <span>checks</span>
+              </div>
+              <div className="backup-stat">
+                <b>{backupSummary.revisions}</b>
+                <span>sessions</span>
+              </div>
+            </output>
+          )}
+          <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-950">
+            Make a fresh export first if you want a recovery point for the
+            current state. Restoration is a safe merge and does not remove newer
+            unmatched records.
+          </div>
+          <DialogFooter className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBackupOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void restoreBackup()}
+              disabled={!backupPayload || saving}
+            >
+              {saving ? 'Restoring…' : 'Merge verified backup'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={Boolean(selectedTopic)}
@@ -1781,6 +2664,7 @@ export function RevisionDashboard() {
                       variant={mark === value ? 'default' : 'outline'}
                       className="h-auto flex-col py-3"
                       onClick={() => setMark(value)}
+                      aria-pressed={mark === value}
                     >
                       <span className="text-base">{value}</span>
                       <span className="text-[10px] opacity-70">
@@ -1866,6 +2750,37 @@ export function RevisionDashboard() {
                   placeholder="What was still unclear, hesitant, or worth testing next?"
                 />
               </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block" htmlFor="mistake-category">
+                  <span className="input-label">Mistake pattern</span>
+                  <NativeSelect
+                    id="mistake-category"
+                    className="w-full"
+                    value={mistakeCategory}
+                    onChange={(event) =>
+                      setMistakeCategory(event.target.value as MistakeCategory)
+                    }
+                  >
+                    {mistakeOptions.map((option) => (
+                      <NativeSelectOption
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {option.label} — {option.hint}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </label>
+                <label className="block" htmlFor="repair-action">
+                  <span className="input-label">Next repair action</span>
+                  <Textarea
+                    id="repair-action"
+                    value={repairAction}
+                    onChange={(event) => setRepairAction(event.target.value)}
+                    placeholder="Rebuild the FSM state table blind, then simulate the failing transition"
+                  />
+                </label>
+              </div>
             </div>
             <DialogFooter className="mt-6">
               <Button type="submit" className="h-10" disabled={saving}>
@@ -2066,6 +2981,31 @@ export function RevisionDashboard() {
             <div className="mt-5 space-y-6">
               <fieldset>
                 <legend className="mb-3 text-sm font-bold">
+                  Daily practice system
+                </legend>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <TimingInput
+                    id="daily-goal-minutes"
+                    name="dailyGoalMinutes"
+                    label="Daily study target"
+                    value={settings.daily_goal_minutes}
+                    min={10}
+                    max={600}
+                    unit="minutes"
+                  />
+                  <TimingInput
+                    id="focus-block-minutes"
+                    name="focusBlockMinutes"
+                    label="Default focus block"
+                    value={settings.focus_block_minutes}
+                    min={5}
+                    max={180}
+                    unit="minutes"
+                  />
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="mb-3 text-sm font-bold">
                   Color windows
                 </legend>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -2163,6 +3103,7 @@ function TimingInput({
   value,
   min = 1,
   max = 365,
+  unit = 'days',
 }: {
   id: string;
   name: string;
@@ -2170,6 +3111,7 @@ function TimingInput({
   value: number;
   min?: number;
   max?: number;
+  unit?: string;
 }) {
   return (
     <Field id={id} label={label}>
@@ -2181,11 +3123,11 @@ function TimingInput({
           min={min}
           max={max}
           defaultValue={value}
-          className="pr-12"
+          className={unit === 'days' ? 'pr-12' : 'pr-20'}
           required
         />
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-          days
+          {unit}
         </span>
       </div>
     </Field>

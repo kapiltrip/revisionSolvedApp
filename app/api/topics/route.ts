@@ -1,5 +1,9 @@
 import { getRevisionStore } from '@/lib/revision-store';
-import { scheduleRevision, type RecallMark } from '@/lib/revision-engine';
+import {
+  isDateKey,
+  scheduleRevision,
+  type RecallMark,
+} from '@/lib/revision-engine';
 import { subtopicSeedsForTopic } from '@/data/subtopic-seed';
 
 function stringField(value: unknown, fallback = '') {
@@ -23,6 +27,19 @@ function boundedInteger(
   max: number,
 ) {
   return Math.min(max, Math.max(min, integerField(value, fallback)));
+}
+
+function nullableHttpUrl(value: unknown) {
+  const candidate = stringField(value).trim();
+  if (!candidate) return null;
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? candidate.slice(0, 2000)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET() {
@@ -49,7 +66,8 @@ export async function GET() {
       db
         .prepare(
           `SELECT id, topic_id, mark, revised_at, next_due_at, proof, notes,
-            duration_minutes, reflection, mood, created_at
+            duration_minutes, reflection, mood, mistake_category,
+            repair_action, created_at
           FROM revisions ORDER BY revised_at DESC, id DESC`,
         )
         .all(),
@@ -57,7 +75,7 @@ export async function GET() {
         .prepare(
           `SELECT urgent_window_days, yellow_window_days, missed_interval_days,
             hesitant_interval_days, recalled_first_days, recalled_second_days,
-            recalled_mastered_days
+            recalled_mastered_days, daily_goal_minutes, focus_block_minutes
           FROM revision_settings WHERE id = 'default'`,
         )
         .first(),
@@ -86,12 +104,23 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
 
     if (action === 'add') {
-      const title = stringField(body.title).trim();
-      const subject = stringField(body.subject).trim();
-      const repository = stringField(body.repository, 'revision-solved');
-      const priority = stringField(body.priority, 'normal');
-      const targetDate = stringField(body.targetDate) || null;
-      const sourceUrl = stringField(body.sourceUrl) || null;
+      const title = stringField(body.title).trim().slice(0, 300);
+      const subject = stringField(body.subject).trim().slice(0, 160);
+      const repository = [
+        'revision-solved',
+        'systemverilog-from-beginning',
+        'cpp-and-scripting-practice',
+        'hdlbits',
+      ].includes(stringField(body.repository))
+        ? stringField(body.repository)
+        : 'revision-solved';
+      const priority = ['high', 'medium', 'normal'].includes(
+        stringField(body.priority),
+      )
+        ? stringField(body.priority)
+        : 'normal';
+      const targetDate = isDateKey(body.targetDate) ? body.targetDate : null;
+      const sourceUrl = nullableHttpUrl(body.sourceUrl);
       const urgencyOverride = ['urgent', 'soon', 'ready'].includes(
         stringField(body.urgencyOverride),
       )
@@ -226,10 +255,25 @@ export async function POST(request: Request) {
       const id = stringField(body.id);
       const mark = stringField(body.mark);
       const revisedAt = stringField(body.revisedAt);
-      const proof = stringField(body.proof).trim();
-      const notes = stringField(body.notes).trim();
+      const proof = stringField(body.proof).trim().slice(0, 12000);
+      const notes = stringField(body.notes).trim().slice(0, 12000);
       const durationMinutes = boundedInteger(body.durationMinutes, 0, 0, 600);
-      const reflection = stringField(body.reflection).trim();
+      const reflection = stringField(body.reflection).trim().slice(0, 12000);
+      const mistakeCategory = [
+        'none',
+        'syntax',
+        'logic',
+        'timing',
+        'state',
+        'interface',
+        'verification',
+        'memory',
+      ].includes(stringField(body.mistakeCategory))
+        ? stringField(body.mistakeCategory)
+        : 'none';
+      const repairAction = stringField(body.repairAction)
+        .trim()
+        .slice(0, 12000);
       const mood = ['drained', 'foggy', 'steady', 'energized'].includes(
         stringField(body.mood),
       )
@@ -242,7 +286,7 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(revisedAt)) {
+      if (!isDateKey(revisedAt)) {
         return Response.json(
           { error: 'Choose a valid revision date.' },
           { status: 400 },
@@ -337,8 +381,9 @@ export async function POST(request: Request) {
           .prepare(
             `INSERT INTO revisions (
               topic_id, mark, revised_at, next_due_at, proof, notes,
-              duration_minutes, reflection, mood, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              duration_minutes, reflection, mood, mistake_category,
+              repair_action, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             id,
@@ -350,6 +395,8 @@ export async function POST(request: Request) {
             durationMinutes,
             reflection,
             mood,
+            mistakeCategory,
+            repairAction,
             now,
           ),
         ...(mark === 'R'
@@ -378,7 +425,7 @@ export async function POST(request: Request) {
       )
         ? stringField(body.priority)
         : 'normal';
-      const targetDate = stringField(body.targetDate) || null;
+      const targetDate = isDateKey(body.targetDate) ? body.targetDate : null;
       const estimatedMinutes = boundedInteger(
         body.estimatedMinutes,
         30,
@@ -440,6 +487,18 @@ export async function POST(request: Request) {
         recalledSecondDays,
         365,
       );
+      const dailyGoalMinutes = boundedInteger(
+        body.dailyGoalMinutes,
+        60,
+        10,
+        600,
+      );
+      const focusBlockMinutes = boundedInteger(
+        body.focusBlockMinutes,
+        30,
+        5,
+        180,
+      );
 
       await db
         .prepare(
@@ -447,7 +506,8 @@ export async function POST(request: Request) {
             yellow_window_days = ?, missed_interval_days = ?,
             hesitant_interval_days = ?, recalled_first_days = ?,
             recalled_second_days = ?, recalled_mastered_days = ?,
-            updated_at = ? WHERE id = 'default'`,
+            daily_goal_minutes = ?, focus_block_minutes = ?, updated_at = ?
+            WHERE id = 'default'`,
         )
         .bind(
           urgentWindowDays,
@@ -457,6 +517,8 @@ export async function POST(request: Request) {
           recalledFirstDays,
           recalledSecondDays,
           recalledMasteredDays,
+          dailyGoalMinutes,
+          focusBlockMinutes,
           now,
         )
         .run();

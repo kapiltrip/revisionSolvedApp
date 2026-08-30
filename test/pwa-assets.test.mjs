@@ -14,12 +14,15 @@ test('manifest describes an installable standalone education app', () => {
   assert.ok(value.icons?.some((icon) => icon.src === '/favicon.svg'));
 });
 
-test('service worker keeps API writes network-only and provides a shell fallback', async () => {
+test('service worker keeps writes network-only, caches read snapshots, and provides a shell fallback', async () => {
   const source = await readFile(
     new URL('../public/sw.js', import.meta.url),
     'utf8',
   );
+  assert.match(source, /request\.method !== 'GET'/);
+  assert.match(source, /url\.pathname === '\/api\/topics'/);
   assert.match(source, /url\.pathname\.startsWith\('\/api\/'\)/);
+  assert.match(source, /cache\.put\(request, copy\)/);
   assert.match(source, /request\.mode === 'navigate'/);
   assert.match(source, /caches\.match\('\/'\)/);
 });

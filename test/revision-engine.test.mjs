@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   addDays,
   daysUntil,
+  isDateKey,
   recallIntervalDays,
   scheduleRevision,
   urgencyForTopic,
@@ -33,6 +34,9 @@ test('calendar arithmetic is stable across month and leap-year boundaries', () =
   assert.equal(addDays('2026-12-31', 1), '2027-01-01');
   assert.equal(daysUntil('2026-09-02', '2026-08-30'), 3);
   assert.throws(() => daysUntil('2026-02-30', '2026-02-01'));
+  assert.equal(isDateKey('2026-02-28'), true);
+  assert.equal(isDateKey('2026-02-30'), false);
+  assert.equal(isDateKey(20260830), false);
 });
 
 test('manual urgency and recall evidence override date-based color windows', () => {

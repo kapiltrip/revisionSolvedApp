@@ -33,6 +33,8 @@ export const revisions = sqliteTable('revisions', {
   durationMinutes: integer('duration_minutes').notNull().default(0),
   reflection: text('reflection').notNull().default(''),
   mood: text('mood').notNull().default('steady'),
+  mistakeCategory: text('mistake_category').notNull().default('none'),
+  repairAction: text('repair_action').notNull().default(''),
   createdAt: text('created_at').notNull(),
 });
 
@@ -45,6 +47,8 @@ export const revisionSettings = sqliteTable('revision_settings', {
   recalledFirstDays: integer('recalled_first_days').notNull().default(7),
   recalledSecondDays: integer('recalled_second_days').notNull().default(14),
   recalledMasteredDays: integer('recalled_mastered_days').notNull().default(30),
+  dailyGoalMinutes: integer('daily_goal_minutes').notNull().default(60),
+  focusBlockMinutes: integer('focus_block_minutes').notNull().default(30),
   updatedAt: text('updated_at').notNull(),
 });
 

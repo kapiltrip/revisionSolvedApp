@@ -36,6 +36,16 @@ function parseDateKey(date: string) {
   return milliseconds;
 }
 
+export function isDateKey(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    parseDateKey(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function localDate(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
