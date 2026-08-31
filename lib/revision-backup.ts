@@ -21,6 +21,20 @@ const mistakeCategories = new Set([
   'verification',
   'memory',
 ]);
+const todoPriorities = new Set(['high', 'normal', 'low']);
+const todoStatuses = new Set(['open', 'completed']);
+const practiceModes = new Set(['smart-series', 'single']);
+const practiceFocuses = new Set([
+  'all',
+  'fundamentals',
+  'combinational',
+  'sequential',
+  'fsm',
+  'verification',
+  'weak-spots',
+]);
+const practiceStatuses = new Set(['active', 'completed', 'abandoned']);
+const practiceOutcomes = new Set(['recalled', 'hesitant', 'missed']);
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -75,6 +89,12 @@ function timestamp(value: unknown, fallback: string) {
   return Number.isFinite(parsed) ? new Date(parsed).toISOString() : fallback;
 }
 
+function nullableTimestamp(value: unknown) {
+  if (typeof value !== 'string' || !value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : null;
+}
+
 function sourceUrl(value: unknown) {
   const candidate = nullableText(value, 2000);
   if (!candidate) return null;
@@ -99,6 +119,10 @@ export function parseRevisionBackup(
   const rawTopics = Array.isArray(root.topics) ? root.topics : null;
   const rawSubtopics = Array.isArray(root.subtopics) ? root.subtopics : null;
   const rawRevisions = Array.isArray(root.revisions) ? root.revisions : null;
+  const rawTodos = Array.isArray(root.todos) ? root.todos : [];
+  const rawPracticeSessions = Array.isArray(root.hdlbitsPracticeSessions)
+    ? root.hdlbitsPracticeSessions
+    : [];
   const rawSettings = record(root.settings);
   if (!rawTopics || !rawSubtopics || !rawRevisions || !rawSettings) {
     throw new Error(
@@ -108,7 +132,9 @@ export function parseRevisionBackup(
   if (
     rawTopics.length > 1000 ||
     rawSubtopics.length > 10000 ||
-    rawRevisions.length > 5000
+    rawRevisions.length > 5000 ||
+    rawTodos.length > 5000 ||
+    rawPracticeSessions.length > 5000
   ) {
     throw new Error('Backup is larger than the supported safety limits.');
   }
@@ -221,6 +247,116 @@ export function parseRevisionBackup(
     ];
   });
 
+  const todoIds = new Set<string>();
+  const todos = rawTodos.flatMap((value) => {
+    const item = record(value);
+    if (!item) return [];
+    const id = text(item.id, 160);
+    const title = text(item.title, 240);
+    if (!id || !title || todoIds.has(id)) return [];
+    todoIds.add(id);
+    return [
+      {
+        id,
+        title,
+        notes: text(item.notes, 4000),
+        category: text(item.category, 80, 'Personal') || 'Personal',
+        priority: enumValue<'high' | 'normal' | 'low'>(
+          item.priority,
+          todoPriorities,
+          'normal',
+        ),
+        dueAt: nullableTimestamp(item.due_at),
+        reminderAt: nullableTimestamp(item.reminder_at),
+        status: enumValue<'open' | 'completed'>(
+          item.status,
+          todoStatuses,
+          'open',
+        ),
+        completedAt: nullableTimestamp(item.completed_at),
+        archivedAt: nullableTimestamp(item.archived_at),
+        createdAt: timestamp(item.created_at, now),
+        updatedAt: timestamp(item.updated_at, now),
+      },
+    ];
+  });
+
+  const practiceIds = new Set<string>();
+  const hdlbitsPracticeSessions = rawPracticeSessions.flatMap((value) => {
+    const item = record(value);
+    if (!item) return [];
+    const id = text(item.id, 180);
+    const seedQuestionId = text(item.seed_question_id, 40);
+    let questionIds: string[] = [];
+    try {
+      const source =
+        typeof item.question_ids === 'string'
+          ? JSON.parse(item.question_ids)
+          : item.question_ids;
+      if (Array.isArray(source)) {
+        questionIds = source
+          .filter(
+            (question): question is string =>
+              typeof question === 'string' && /^hdlbits-\d{3}$/.test(question),
+          )
+          .slice(0, 30);
+      }
+    } catch {
+      questionIds = [];
+    }
+    if (
+      !id ||
+      !/^hdlbits-\d{3}$/.test(seedQuestionId) ||
+      !questionIds.length ||
+      practiceIds.has(id)
+    ) {
+      return [];
+    }
+    practiceIds.add(id);
+    return [
+      {
+        id,
+        seedQuestionId,
+        questionIds: JSON.stringify(questionIds),
+        seriesId: nullableText(item.series_id, 120),
+        seriesName: nullableText(item.series_name, 240),
+        mode: enumValue<'smart-series' | 'single'>(
+          item.mode,
+          practiceModes,
+          'smart-series',
+        ),
+        focus: enumValue<
+          | 'all'
+          | 'fundamentals'
+          | 'combinational'
+          | 'sequential'
+          | 'fsm'
+          | 'verification'
+          | 'weak-spots'
+        >(item.focus, practiceFocuses, 'all'),
+        status: enumValue<'active' | 'completed' | 'abandoned'>(
+          item.status,
+          practiceStatuses,
+          'abandoned',
+        ),
+        currentIndex: integer(
+          item.current_index,
+          0,
+          0,
+          Math.max(0, questionIds.length - 1),
+        ),
+        timeLimitMinutes: integer(item.time_limit_minutes, 15, 1, 600),
+        outcome: nullableEnum<'recalled' | 'hesitant' | 'missed'>(
+          item.outcome,
+          practiceOutcomes,
+        ),
+        startedAt: timestamp(item.started_at, now),
+        completedAt: nullableTimestamp(item.completed_at),
+        updatedAt: timestamp(item.updated_at, now),
+      },
+    ];
+  });
+
   const urgentWindowDays = integer(rawSettings.urgent_window_days, 0, 0, 30);
   const recalledFirstDays = integer(rawSettings.recalled_first_days, 7, 1, 120);
   const recalledSecondDays = integer(
@@ -252,16 +388,21 @@ export function parseRevisionBackup(
   };
 
   return {
-    schemaVersion: 2 as const,
+    schemaVersion: 3 as const,
     exportedAt: timestamp(root.exportedAt, now),
     topics,
     subtopics,
     revisions,
+    todos,
+    hdlbitsPracticeSessions,
     settings,
     skipped: {
       topics: rawTopics.length - topics.length,
       subtopics: rawSubtopics.length - subtopics.length,
       revisions: rawRevisions.length - revisions.length,
+      todos: rawTodos.length - todos.length,
+      hdlbitsPracticeSessions:
+        rawPracticeSessions.length - hdlbitsPracticeSessions.length,
     },
   };
 }

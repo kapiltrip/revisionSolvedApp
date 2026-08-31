@@ -144,6 +144,299 @@ html {
   .skip-link {
     @apply fixed left-4 top-3 z-[100] -translate-y-24 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg transition-transform focus:translate-y-0;
   }
+  .header-tool-link {
+    @apply inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+  }
+  .header-tool-link svg {
+    @apply size-3.5;
+  }
+  .eyebrow-label {
+    @apply text-[10px] font-bold uppercase tracking-[0.14em] text-primary/60;
+  }
+  .productivity-workspace {
+    @apply grid items-start gap-6 2xl:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)];
+  }
+  .todo-command {
+    @apply overflow-hidden rounded-2xl border bg-card p-5 shadow-[0_16px_48px_rgb(27_49_77/7%)] sm:p-6;
+  }
+  .todo-command-top {
+    @apply flex flex-col justify-between gap-4 sm:flex-row sm:items-start;
+  }
+  .todo-mark {
+    @apply grid size-11 shrink-0 place-items-center rounded-xl bg-[#d9e1f2] text-primary;
+  }
+  .todo-mark svg {
+    @apply size-5;
+  }
+  .todo-stats {
+    @apply mt-5 grid grid-cols-3 overflow-hidden rounded-xl border bg-muted/25;
+  }
+  .todo-stats > div {
+    @apply border-r px-3 py-3 last:border-r-0;
+  }
+  .todo-stats strong,
+  .todo-stats span {
+    @apply block;
+  }
+  .todo-stats strong {
+    @apply text-xl font-bold tracking-tight;
+  }
+  .todo-stats span {
+    @apply mt-0.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-muted-foreground;
+  }
+  .todo-stats .has-overdue strong,
+  .todo-stats .has-overdue span {
+    @apply text-orange-800;
+  }
+  .todo-quick-add {
+    @apply mt-4 grid gap-2 sm:grid-cols-2;
+  }
+  .todo-quick-add #todo-quick-title,
+  .todo-quick-add button[type='submit'] {
+    @apply sm:col-span-2;
+  }
+  .todo-quick-add [data-slot='native-select'] {
+    @apply h-11 rounded-xl bg-card;
+  }
+  .todo-feedback {
+    @apply mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900;
+  }
+  .todo-feedback.error {
+    @apply border-orange-200 bg-orange-50 text-orange-900;
+  }
+  .todo-filter-row {
+    @apply mt-5 flex gap-1 overflow-x-auto border-b pb-2;
+  }
+  .todo-filter-row button {
+    @apply shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+  }
+  .todo-filter-row button.selected {
+    @apply bg-primary text-primary-foreground;
+  }
+  .todo-list {
+    @apply mt-2 grid max-h-[430px] gap-1 overflow-y-auto pr-1;
+  }
+  .todo-item {
+    @apply grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-start gap-3 rounded-xl border border-transparent px-3 py-3 transition-colors hover:border-border hover:bg-muted/35;
+  }
+  .todo-item > [data-slot='checkbox'] {
+    @apply mt-1;
+  }
+  .todo-item h3 {
+    @apply font-semibold leading-5;
+  }
+  .todo-item.completed h3 {
+    @apply text-muted-foreground line-through;
+  }
+  .todo-item.overdue {
+    @apply border-orange-100 bg-orange-50/45;
+  }
+  .todo-notes {
+    @apply mt-1 text-xs leading-5 text-muted-foreground;
+  }
+  .todo-meta {
+    @apply mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-muted-foreground;
+  }
+  .todo-meta span {
+    @apply inline-flex items-center gap-1;
+  }
+  .todo-meta svg {
+    @apply size-3;
+  }
+  .todo-meta .overdue-label {
+    @apply font-bold text-orange-800;
+  }
+  .todo-priority-high {
+    @apply border-orange-200 bg-orange-50 text-[9px] text-orange-800;
+  }
+  .todo-empty {
+    @apply grid min-h-40 place-items-center content-center gap-2 rounded-xl border border-dashed bg-muted/20 px-5 text-center;
+  }
+  .todo-empty svg {
+    @apply size-6 text-primary/45;
+  }
+  .todo-empty p {
+    @apply text-sm font-semibold;
+  }
+  .todo-empty span {
+    @apply text-xs text-muted-foreground;
+  }
+  .question-giver {
+    @apply overflow-hidden rounded-2xl border border-[#17366f] bg-[#061f4d] p-5 text-white shadow-[0_22px_60px_rgb(6_31_77/18%)] sm:p-6;
+  }
+  .question-giver-header {
+    @apply flex flex-col justify-between gap-5 border-b border-white/10 pb-5 lg:flex-row lg:items-start;
+  }
+  .question-giver-mark {
+    @apply grid size-11 shrink-0 place-items-center rounded-xl border border-orange-200/20 bg-orange-300/10 text-orange-200;
+  }
+  .question-giver-mark svg {
+    @apply size-5;
+  }
+  .question-summary {
+    @apply grid shrink-0 grid-cols-3 overflow-hidden rounded-xl border border-white/10 bg-white/6;
+  }
+  .question-summary > div {
+    @apply min-w-20 border-r px-3 py-2.5 text-right last:border-r-0 last:border-white/10;
+  }
+  .question-summary strong,
+  .question-summary span {
+    @apply block;
+  }
+  .question-summary strong {
+    @apply text-lg font-bold text-white;
+  }
+  .question-summary span {
+    @apply text-[9px] font-semibold uppercase tracking-[0.1em] text-blue-100/55;
+  }
+  .question-loading {
+    @apply grid min-h-72 place-items-center content-center gap-3 text-sm text-blue-100/70;
+  }
+  .question-loading svg {
+    @apply size-7 animate-pulse text-orange-200;
+  }
+  .question-active {
+    @apply mt-5 grid gap-4;
+  }
+  .question-stage {
+    @apply min-w-0 rounded-2xl border border-white/10 bg-white/5 p-5;
+  }
+  .question-timer-row {
+    @apply flex items-end justify-between gap-4;
+  }
+  .question-timer-row output {
+    @apply mt-1 block font-mono text-4xl font-bold tabular-nums tracking-[-0.04em] text-white;
+  }
+  .question-timer-row output.expired {
+    @apply text-orange-200;
+  }
+  .question-stage [data-slot='progress-track'] {
+    @apply h-1.5 bg-white/10;
+  }
+  .question-stage [data-slot='progress-indicator'] {
+    @apply bg-orange-300;
+  }
+  .question-difficulty {
+    @apply border-white/15 bg-white/8 text-blue-50;
+  }
+  .question-difficulty.challenge {
+    @apply border-orange-200/30 bg-orange-300/10 text-orange-100;
+  }
+  .question-difficulty.warm-up {
+    @apply border-emerald-200/25 bg-emerald-300/10 text-emerald-100;
+  }
+  .question-context {
+    @apply mt-4 flex flex-wrap gap-1.5;
+  }
+  .question-context span {
+    @apply inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/6 px-2 py-1 text-[10px] font-semibold text-blue-100/65;
+  }
+  .question-context svg {
+    @apply size-3;
+  }
+  .question-parts {
+    @apply rounded-2xl bg-white p-5 text-foreground;
+  }
+  .question-part-list {
+    @apply mt-4 grid max-h-72 gap-1.5 overflow-y-auto pr-1;
+  }
+  .question-part-list button {
+    @apply grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-transparent p-2 text-left transition-colors hover:border-border hover:bg-muted/50;
+  }
+  .question-part-list button.current {
+    @apply border-primary/20 bg-primary/7;
+  }
+  .question-part-list button > span {
+    @apply grid size-7 place-items-center rounded-lg bg-muted text-[10px] font-bold text-primary;
+  }
+  .question-part-list button.current > span {
+    @apply bg-primary text-primary-foreground;
+  }
+  .question-part-list b,
+  .question-part-list small {
+    @apply block;
+  }
+  .question-part-list b {
+    @apply truncate text-xs;
+  }
+  .question-part-list small {
+    @apply mt-0.5 text-[10px] text-muted-foreground;
+  }
+  .question-part-list svg {
+    @apply size-3.5 text-emerald-600;
+  }
+  .question-finish {
+    @apply mt-5 border-t pt-4;
+  }
+  .question-finish > p {
+    @apply mb-2 text-xs font-bold;
+  }
+  .question-finish button {
+    @apply flex min-h-20 flex-col items-center justify-center rounded-xl border bg-muted/20 px-1 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 disabled:opacity-50;
+  }
+  .question-finish button svg {
+    @apply mb-1 size-4 text-primary;
+  }
+  .question-finish button b,
+  .question-finish button span {
+    @apply block;
+  }
+  .question-finish button b {
+    @apply text-[10px];
+  }
+  .question-finish button span {
+    @apply mt-0.5 text-[9px] text-muted-foreground;
+  }
+  .question-draw {
+    @apply grid gap-6 py-7 lg:grid-cols-[minmax(0,1fr)_minmax(280px,.75fr)] lg:items-end;
+  }
+  .question-draw-controls {
+    @apply grid gap-3 rounded-2xl border border-white/10 bg-white/6 p-4;
+  }
+  .question-draw-controls label > span {
+    @apply mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-blue-100/60;
+  }
+  .question-draw-controls [data-slot='native-select'] {
+    @apply h-10 border-white/15 bg-white/7 text-white;
+  }
+  .question-feedback {
+    @apply mt-3 rounded-xl border border-emerald-200/15 bg-emerald-300/10 px-3 py-2 text-xs text-emerald-100;
+  }
+  .question-feedback.error {
+    @apply border-orange-200/20 bg-orange-300/10 text-orange-100;
+  }
+  .question-recent {
+    @apply border-t border-white/10 pt-4;
+  }
+  .question-recent > div {
+    @apply mt-2 grid gap-2 sm:grid-cols-2;
+  }
+  .question-recent article {
+    @apply flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3;
+  }
+  .question-recent b,
+  .question-recent small {
+    @apply block;
+  }
+  .question-recent b {
+    @apply text-xs text-white;
+  }
+  .question-recent small {
+    @apply mt-1 text-[10px] text-blue-100/55;
+  }
+  .practice-outcome {
+    @apply grid size-8 shrink-0 place-items-center rounded-lg bg-white/8 text-blue-100;
+  }
+  .practice-outcome svg {
+    @apply size-3.5;
+  }
+  .practice-outcome.recalled {
+    @apply bg-emerald-300/15 text-emerald-100;
+  }
+  .practice-outcome.missed,
+  .practice-outcome.abandoned {
+    @apply bg-orange-300/15 text-orange-100;
+  }
   .connection-pill {
     @apply inline-flex h-10 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold;
   }

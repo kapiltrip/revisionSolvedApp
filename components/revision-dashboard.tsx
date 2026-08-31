@@ -58,6 +58,8 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { PwaInstallButton } from '@/components/pwa-install';
+import { HdlBitsQuestionGiver } from '@/components/hdlbits-question-giver';
+import { PersonalTodo } from '@/components/personal-todo';
 import { buildLearningAnalytics } from '@/lib/revision-analytics';
 import {
   daysUntil,
@@ -394,6 +396,8 @@ export function RevisionDashboard() {
     topics: number;
     subtopics: number;
     revisions: number;
+    todos: number;
+    hdlbitsPracticeSessions: number;
   } | null>(null);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(
     () => new Set(),
@@ -989,6 +993,7 @@ export function RevisionDashboard() {
         `Revision saved. Next due ${formatDate(data.nextDueAt ?? null)}.`,
       );
       await loadTopics();
+      window.dispatchEvent(new Event('revision-solved:backup-restored'));
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -1094,28 +1099,36 @@ export function RevisionDashboard() {
     }
   }
 
-  function exportBackup() {
-    const payload = JSON.stringify(
-      {
-        schemaVersion: 2,
-        exportedAt: new Date().toISOString(),
-        settings,
-        topics,
-        subtopics,
-        revisions,
-      },
-      null,
-      2,
-    );
-    const url = URL.createObjectURL(
-      new Blob([payload], { type: 'application/json' }),
-    );
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `revision-solved-backup-${localDate()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setMessage('Backup exported as JSON.');
+  async function exportBackup() {
+    setSaving(true);
+    setError('');
+    try {
+      const response = await fetch('/api/backup', { cache: 'no-store' });
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? 'Could not create the backup.');
+      }
+      const payload = await response.text();
+      const url = URL.createObjectURL(
+        new Blob([payload], { type: 'application/json' }),
+      );
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `revision-solved-backup-${localDate()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage(
+        'Complete backup exported, including to-dos and HDLBits sprints.',
+      );
+    } catch (backupError) {
+      setError(
+        backupError instanceof Error
+          ? backupError.message
+          : 'Could not create the backup.',
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function selectBackupFile(event: React.ChangeEvent<HTMLInputElement>) {
@@ -1138,6 +1151,12 @@ export function RevisionDashboard() {
       const revisions = Array.isArray(parsed.revisions)
         ? parsed.revisions.length
         : 0;
+      const todos = Array.isArray(parsed.todos) ? parsed.todos.length : 0;
+      const hdlbitsPracticeSessions = Array.isArray(
+        parsed.hdlbitsPracticeSessions,
+      )
+        ? parsed.hdlbitsPracticeSessions.length
+        : 0;
       if (
         !topics ||
         !Array.isArray(parsed.subtopics) ||
@@ -1146,7 +1165,13 @@ export function RevisionDashboard() {
         throw new Error('This is not a complete Revision Solved backup.');
       }
       setBackupPayload(payload);
-      setBackupSummary({ topics, subtopics, revisions });
+      setBackupSummary({
+        topics,
+        subtopics,
+        revisions,
+        todos,
+        hdlbitsPracticeSessions,
+      });
       setError('');
     } catch (selectionError) {
       setError(
@@ -1169,7 +1194,13 @@ export function RevisionDashboard() {
       });
       const data = (await response.json()) as {
         error?: string;
-        restored?: { topics: number; subtopics: number; revisions: number };
+        restored?: {
+          topics: number;
+          subtopics: number;
+          revisions: number;
+          todos: number;
+          hdlbitsPracticeSessions: number;
+        };
       };
       if (!response.ok) {
         throw new Error(data.error ?? 'Could not restore backup.');
@@ -1179,7 +1210,7 @@ export function RevisionDashboard() {
       setBackupSummary(null);
       setBackupFileName('');
       setMessage(
-        `Backup restored: ${data.restored?.topics ?? 0} topics and ${data.restored?.revisions ?? 0} revision observations merged safely.`,
+        `Backup restored: ${data.restored?.topics ?? 0} topics, ${data.restored?.todos ?? 0} to-dos, and ${data.restored?.hdlbitsPracticeSessions ?? 0} HDLBits sprints merged safely.`,
       );
       await loadTopics();
     } catch (restoreError) {
@@ -1214,6 +1245,17 @@ export function RevisionDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <nav
+              className="hidden items-center gap-1 xl:flex"
+              aria-label="Personal tools"
+            >
+              <a className="header-tool-link" href="#personal-todos">
+                <CheckCircle2 /> To-dos
+              </a>
+              <a className="header-tool-link" href="#hdlbits-question-giver">
+                <Sparkles /> Question
+              </a>
+            </nav>
             <a
               href="https://github.com/kapiltrip/revisionSolvedApp"
               target="_blank"
@@ -1348,6 +1390,11 @@ export function RevisionDashboard() {
             </div>
           </div>
         )}
+
+        <div className="productivity-workspace mb-7">
+          <PersonalTodo online={online} />
+          <HdlBitsQuestionGiver online={online} />
+        </div>
 
         {loading ? (
           <LoadingDashboard />
@@ -2451,7 +2498,12 @@ export function RevisionDashboard() {
                 >
                   <Upload /> Restore backup
                 </Button>
-                <Button variant="ghost" size="sm" onClick={exportBackup}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void exportBackup()}
+                  disabled={!online || saving}
+                >
                   <Download /> Export complete backup
                 </Button>
               </div>
@@ -2602,7 +2654,7 @@ export function RevisionDashboard() {
             />
           </label>
           {backupSummary && (
-            <output className="mt-4 grid grid-cols-3 gap-2">
+            <output className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
               <div className="backup-stat">
                 <b>{backupSummary.topics}</b>
                 <span>topics</span>
@@ -2614,6 +2666,14 @@ export function RevisionDashboard() {
               <div className="backup-stat">
                 <b>{backupSummary.revisions}</b>
                 <span>sessions</span>
+              </div>
+              <div className="backup-stat">
+                <b>{backupSummary.todos}</b>
+                <span>to-dos</span>
+              </div>
+              <div className="backup-stat">
+                <b>{backupSummary.hdlbitsPracticeSessions}</b>
+                <span>HDLBits</span>
               </div>
             </output>
           )}

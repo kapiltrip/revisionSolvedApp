@@ -63,3 +63,38 @@ export const subtopics = sqliteTable('subtopics', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const todoItems = sqliteTable('todo_items', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  notes: text('notes').notNull().default(''),
+  category: text('category').notNull().default('Personal'),
+  priority: text('priority').notNull().default('normal'),
+  dueAt: text('due_at'),
+  reminderAt: text('reminder_at'),
+  status: text('status').notNull().default('open'),
+  completedAt: text('completed_at'),
+  archivedAt: text('archived_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const hdlbitsPracticeSessions = sqliteTable(
+  'hdlbits_practice_sessions',
+  {
+    id: text('id').primaryKey(),
+    seedQuestionId: text('seed_question_id').notNull(),
+    questionIds: text('question_ids').notNull(),
+    seriesId: text('series_id'),
+    seriesName: text('series_name'),
+    mode: text('mode').notNull(),
+    focus: text('focus').notNull(),
+    status: text('status').notNull().default('active'),
+    currentIndex: integer('current_index').notNull().default(0),
+    timeLimitMinutes: integer('time_limit_minutes').notNull(),
+    outcome: text('outcome'),
+    startedAt: text('started_at').notNull(),
+    completedAt: text('completed_at'),
+    updatedAt: text('updated_at').notNull(),
+  },
+);

@@ -11,6 +11,45 @@ async function runInChunks(
   }
 }
 
+export async function GET() {
+  try {
+    const db = await getRevisionStore();
+    const [topics, subtopics, revisions, settings, todos, practice] =
+      await Promise.all([
+        db.prepare('SELECT * FROM topics ORDER BY id').all(),
+        db
+          .prepare('SELECT * FROM subtopics ORDER BY topic_id, sort_order, id')
+          .all(),
+        db.prepare('SELECT * FROM revisions ORDER BY revised_at, id').all(),
+        db
+          .prepare("SELECT * FROM revision_settings WHERE id = 'default'")
+          .first(),
+        db.prepare('SELECT * FROM todo_items ORDER BY created_at, id').all(),
+        db
+          .prepare(
+            'SELECT * FROM hdlbits_practice_sessions ORDER BY started_at, id',
+          )
+          .all(),
+      ]);
+    return Response.json({
+      schemaVersion: 3,
+      exportedAt: new Date().toISOString(),
+      settings,
+      topics: topics.results,
+      subtopics: subtopics.results,
+      revisions: revisions.results,
+      todos: todos.results,
+      hdlbitsPracticeSessions: practice.results,
+    });
+  } catch (error) {
+    console.error(error);
+    return Response.json(
+      { error: 'Could not create the backup.' },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const raw = await request.text();
@@ -161,6 +200,109 @@ export async function POST(request: Request) {
       ),
     );
 
+    await runInChunks(
+      db,
+      backup.todos.map((todo) =>
+        db
+          .prepare(
+            `INSERT INTO todo_items (
+              id, title, notes, category, priority, due_at, reminder_at,
+              status, completed_at, archived_at, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              title = excluded.title,
+              notes = excluded.notes,
+              category = excluded.category,
+              priority = excluded.priority,
+              due_at = excluded.due_at,
+              reminder_at = excluded.reminder_at,
+              status = excluded.status,
+              completed_at = excluded.completed_at,
+              archived_at = excluded.archived_at,
+              updated_at = excluded.updated_at`,
+          )
+          .bind(
+            todo.id,
+            todo.title,
+            todo.notes,
+            todo.category,
+            todo.priority,
+            todo.dueAt,
+            todo.reminderAt,
+            todo.status,
+            todo.completedAt,
+            todo.archivedAt,
+            todo.createdAt,
+            todo.updatedAt,
+          ),
+      ),
+    );
+
+    const newestActive = backup.hdlbitsPracticeSessions
+      .filter((session) => session.status === 'active')
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0]?.id;
+    if (newestActive) {
+      await db
+        .prepare(
+          `UPDATE hdlbits_practice_sessions SET status = 'abandoned',
+            completed_at = COALESCE(completed_at, ?), updated_at = ?
+          WHERE status = 'active'`,
+        )
+        .bind(now, now)
+        .run();
+    }
+    await runInChunks(
+      db,
+      backup.hdlbitsPracticeSessions.map((session) => {
+        const status =
+          session.status === 'active' && session.id !== newestActive
+            ? 'abandoned'
+            : session.status;
+        const completedAt =
+          status === 'abandoned' && !session.completedAt
+            ? session.updatedAt
+            : session.completedAt;
+        return db
+          .prepare(
+            `INSERT INTO hdlbits_practice_sessions (
+              id, seed_question_id, question_ids, series_id, series_name,
+              mode, focus, status, current_index, time_limit_minutes,
+              outcome, started_at, completed_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              seed_question_id = excluded.seed_question_id,
+              question_ids = excluded.question_ids,
+              series_id = excluded.series_id,
+              series_name = excluded.series_name,
+              mode = excluded.mode,
+              focus = excluded.focus,
+              status = excluded.status,
+              current_index = excluded.current_index,
+              time_limit_minutes = excluded.time_limit_minutes,
+              outcome = excluded.outcome,
+              started_at = excluded.started_at,
+              completed_at = excluded.completed_at,
+              updated_at = excluded.updated_at`,
+          )
+          .bind(
+            session.id,
+            session.seedQuestionId,
+            session.questionIds,
+            session.seriesId,
+            session.seriesName,
+            session.mode,
+            session.focus,
+            status,
+            session.currentIndex,
+            session.timeLimitMinutes,
+            session.outcome,
+            session.startedAt,
+            completedAt,
+            session.updatedAt,
+          );
+      }),
+    );
+
     const settings = backup.settings;
     await db
       .prepare(
@@ -192,6 +334,8 @@ export async function POST(request: Request) {
         topics: backup.topics.length,
         subtopics: backup.subtopics.length,
         revisions: backup.revisions.length,
+        todos: backup.todos.length,
+        hdlbitsPracticeSessions: backup.hdlbitsPracticeSessions.length,
       },
       skipped: backup.skipped,
     });

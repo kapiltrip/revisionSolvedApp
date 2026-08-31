@@ -1,5 +1,10 @@
-const CACHE_NAME = 'revision-solved-shell-v2';
+const CACHE_NAME = 'revision-solved-shell-v3';
 const APP_SHELL = ['/', '/favicon.svg'];
+const SNAPSHOT_ENDPOINTS = new Set([
+  '/api/topics',
+  '/api/todos',
+  '/api/hdlbits-practice',
+]);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -32,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname === '/api/topics') {
+  if (SNAPSHOT_ENDPOINTS.has(url.pathname)) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -49,7 +54,7 @@ self.addEventListener('fetch', (event) => {
           return (
             cached ??
             Response.json(
-              { error: 'No offline revision snapshot is available yet.' },
+              { error: 'No offline snapshot is available yet.' },
               { status: 503 },
             )
           );

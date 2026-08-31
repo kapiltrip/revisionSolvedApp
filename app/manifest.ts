@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Revision Solved',
     short_name: 'Revision',
     description:
-      'A deep revision command center for HDLBits, SystemVerilog, digital design, C++ and scripting.',
+      'Personal to-dos, timed HDLBits question sprints, and deep revision planning.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

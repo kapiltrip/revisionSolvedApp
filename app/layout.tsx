@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   applicationName: 'Revision Solved',
   title: 'Revision Solved',
   description:
-    'A deep revision command center for HDLBits, SystemVerilog, digital design, C++, and scripting.',
+    'Personal to-dos, timed HDLBits question sprints, and deep revision planning in one command center.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     title: 'Revision Solved',
     description:
-      'Know what to revise next across HDLBits and all four study repositories.',
+      'Remember what matters and draw a timed HDLBits challenge whenever you are ready.',
     images: [
       {
         url: `${siteUrl}/og.png`,
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Revision Solved',
     description:
-      'Know what to revise next across HDLBits and all four study repositories.',
+      'Remember what matters and draw a timed HDLBits challenge whenever you are ready.',
     images: [`${siteUrl}/og.png`],
   },
 };

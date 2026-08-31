@@ -67,6 +67,38 @@ const subtopicTableSql = `CREATE TABLE IF NOT EXISTS subtopics (
   updated_at TEXT NOT NULL
 )`;
 
+const todoTableSql = `CREATE TABLE IF NOT EXISTS todo_items (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  notes TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT 'Personal',
+  priority TEXT NOT NULL DEFAULT 'normal',
+  due_at TEXT,
+  reminder_at TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  completed_at TEXT,
+  archived_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`;
+
+const hdlbitsPracticeTableSql = `CREATE TABLE IF NOT EXISTS hdlbits_practice_sessions (
+  id TEXT PRIMARY KEY,
+  seed_question_id TEXT NOT NULL,
+  question_ids TEXT NOT NULL,
+  series_id TEXT,
+  series_name TEXT,
+  mode TEXT NOT NULL,
+  focus TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  current_index INTEGER NOT NULL DEFAULT 0,
+  time_limit_minutes INTEGER NOT NULL,
+  outcome TEXT,
+  started_at TEXT NOT NULL,
+  completed_at TEXT,
+  updated_at TEXT NOT NULL
+)`;
+
 async function ensureColumns(db: D1Database) {
   const [topicInfo, revisionInfo, settingsInfo] = await Promise.all([
     db.prepare('PRAGMA table_info(topics)').all<{ name: string }>(),
@@ -158,6 +190,8 @@ export async function getRevisionStore() {
     db.prepare(revisionTableSql),
     db.prepare(settingsTableSql),
     db.prepare(subtopicTableSql),
+    db.prepare(todoTableSql),
+    db.prepare(hdlbitsPracticeTableSql),
     db.prepare(
       'CREATE INDEX IF NOT EXISTS topics_due_idx ON topics(next_due_at, target_date)',
     ),
@@ -172,6 +206,18 @@ export async function getRevisionStore() {
     ),
     db.prepare(
       'CREATE INDEX IF NOT EXISTS subtopics_topic_idx ON subtopics(topic_id, sort_order)',
+    ),
+    db.prepare(
+      `CREATE INDEX IF NOT EXISTS idx_todo_items_status_due
+      ON todo_items(status, due_at) WHERE archived_at IS NULL`,
+    ),
+    db.prepare(
+      `CREATE INDEX IF NOT EXISTS idx_hdlbits_sessions_status_started
+      ON hdlbits_practice_sessions(status, started_at)`,
+    ),
+    db.prepare(
+      `CREATE INDEX IF NOT EXISTS idx_hdlbits_sessions_seed_started
+      ON hdlbits_practice_sessions(seed_question_id, started_at)`,
     ),
   ]);
   await ensureColumns(db);

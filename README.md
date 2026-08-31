@@ -21,6 +21,10 @@ The app combines four source ledgers in one persistent system:
 The dashboard is a working surface rather than a static syllabus:
 
 - builds a session from available minutes and current energy;
+- keeps a durable personal to-do list with deadlines, priorities, categories,
+  optional in-app browser alerts, editing, and completion history;
+- draws a real HDLBits question on demand, automatically expands curated
+  multi-part series, and gives the complete sprint a reload-safe time window;
 - ranks topics by due date, recall quality, priority, and manual urgency;
 - shows repository, subject, topic, and subtopic coverage;
 - records R/H/M recall quality, time, mood, proof, reflection, and the next
@@ -51,11 +55,14 @@ real revision structure in `kapiltrip/hdlBits`:
 
 The dedicated HDLBits workflow enforces:
 
-1. attempt without opening the saved solution;
-2. compile or submit to produce evidence;
-3. inspect the first wrong signal and cycle;
-4. record the exact causal rule rather than “did not understand”;
-5. mark the session R, H, or M so the next attempt is scheduled.
+1. draw from the complete 178-question local archive, prioritizing unseen or
+   historically weak questions;
+2. expand known series such as Lemmings, serial receivers, PS/2, timer design,
+   and cellular automata into one ordered sprint with a complete time budget;
+3. attempt without opening the saved solution;
+4. compile or submit to produce evidence;
+5. inspect the first wrong signal and cycle;
+6. record the outcome as recalled, hesitant, or missed.
 
 Deep links lead directly to the repository, 178-problem learning archive,
 dated revision sheet, and 24-theme mistakes log.
@@ -104,7 +111,9 @@ Cloudflare D1
         ├── topics
         ├── subtopics
         ├── revisions
-        └── revision_settings
+        ├── revision_settings
+        ├── todo_items
+        └── hdlbits_practice_sessions
 
 Versioned seed ledgers ──► idempotent database bootstrap
 ```
@@ -120,7 +129,7 @@ inserts are idempotent.
 ```text
 app/                    routes, metadata, manifest, API, and shared theme
 components/             dashboard, PWA installer, and UI primitives
-data/                   versioned topic and subtopic ledgers
+data/                   topic, subtopic, and real HDLBits question ledgers
 db/                     Drizzle schema
 drizzle/                generated D1 migrations
 lib/revision-engine.ts  tested calendar, urgency, and recall scheduling
@@ -154,10 +163,9 @@ pnpm build
 
 The automated suite verifies calendar boundaries, urgency precedence, the
 complete R/H/M ladder, memory analytics and streaks, hostile backup rejection,
-safe backup normalization, uniqueness of every seed identifier, the exact 17 +
-2 HDLBits structure, all 92 HDLBits checks, and the PWA's offline/write-safety
-rules. The final release is also reviewed interactively in Chrome at desktop
-and mobile widths, including the reload-safe focus-to-revision workflow.
+safe backup normalization, all 178 HDLBits question identifiers and curated
+series, uniqueness of every seed identifier, the exact 17 + 2 HDLBits
+structure, all 92 HDLBits checks, and the PWA's offline/write-safety rules.
 
 ## Deployment
 

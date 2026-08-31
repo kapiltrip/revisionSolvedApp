@@ -20,7 +20,10 @@ test('service worker keeps writes network-only, caches read snapshots, and provi
     'utf8',
   );
   assert.match(source, /request\.method !== 'GET'/);
-  assert.match(source, /url\.pathname === '\/api\/topics'/);
+  assert.match(source, /SNAPSHOT_ENDPOINTS\.has\(url\.pathname\)/);
+  assert.match(source, /'\/api\/topics'/);
+  assert.match(source, /'\/api\/todos'/);
+  assert.match(source, /'\/api\/hdlbits-practice'/);
   assert.match(source, /url\.pathname\.startsWith\('\/api\/'\)/);
   assert.match(source, /cache\.put\(request, copy\)/);
   assert.match(source, /request\.mode === 'navigate'/);

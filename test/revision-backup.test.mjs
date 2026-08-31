@@ -58,18 +58,62 @@ function validBackup() {
         created_at: now,
       },
     ],
+    todos: [
+      {
+        id: 'todo-1',
+        title: 'Revise serial receiver',
+        notes: 'Start without the saved solution',
+        category: 'Study',
+        priority: 'high',
+        due_at: '2026-09-01T12:00:00.000Z',
+        reminder_at: '2026-09-01T11:45:00.000Z',
+        status: 'open',
+        created_at: now,
+        updated_at: now,
+      },
+    ],
+    hdlbitsPracticeSessions: [
+      {
+        id: 'hdl-session-1',
+        seed_question_id: 'hdlbits-163',
+        question_ids: JSON.stringify([
+          'hdlbits-163',
+          'hdlbits-164',
+          'hdlbits-165',
+        ]),
+        series_id: 'serial-receiver',
+        series_name: 'Serial receiver series',
+        mode: 'smart-series',
+        focus: 'fsm',
+        status: 'completed',
+        current_index: 2,
+        time_limit_minutes: 90,
+        outcome: 'hesitant',
+        started_at: now,
+        completed_at: '2026-08-30T01:30:00.000Z',
+        updated_at: '2026-08-30T01:30:00.000Z',
+      },
+    ],
   };
 }
 
 test('backup parser validates and preserves the complete supported model', () => {
   const parsed = parseRevisionBackup(validBackup(), now);
-  assert.equal(parsed.schemaVersion, 2);
+  assert.equal(parsed.schemaVersion, 3);
   assert.equal(parsed.topics[0].repository, 'hdlbits');
   assert.equal(parsed.subtopics[0].covered, 1);
   assert.equal(parsed.revisions[0].mistakeCategory, 'state');
   assert.equal(parsed.settings.dailyGoalMinutes, 75);
   assert.equal(parsed.settings.focusBlockMinutes, 35);
-  assert.deepEqual(parsed.skipped, { topics: 0, subtopics: 0, revisions: 0 });
+  assert.equal(parsed.todos[0].category, 'Study');
+  assert.equal(parsed.hdlbitsPracticeSessions[0].currentIndex, 2);
+  assert.deepEqual(parsed.skipped, {
+    topics: 0,
+    subtopics: 0,
+    revisions: 0,
+    todos: 0,
+    hdlbitsPracticeSessions: 0,
+  });
 });
 
 test('backup parser rejects incomplete roots and impossible date records', () => {
@@ -120,4 +164,34 @@ test('backup parser sanitizes unsafe enum, protocol, range, and duplicate data',
   assert.equal(parsed.revisions.length, 1);
   assert.equal(parsed.skipped.subtopics, 1);
   assert.equal(parsed.skipped.revisions, 2);
+});
+
+test('backup parser remains compatible with version-two exports', () => {
+  const backup = validBackup();
+  delete backup.todos;
+  delete backup.hdlbitsPracticeSessions;
+  const parsed = parseRevisionBackup(backup, now);
+  assert.deepEqual(parsed.todos, []);
+  assert.deepEqual(parsed.hdlbitsPracticeSessions, []);
+});
+
+test('backup parser rejects malformed durable task and practice records safely', () => {
+  const backup = validBackup();
+  backup.todos.push({ ...backup.todos[0], id: 'todo-1' });
+  backup.todos.push({
+    id: 'todo-2',
+    title: '',
+    created_at: now,
+    updated_at: now,
+  });
+  backup.hdlbitsPracticeSessions.push({
+    ...backup.hdlbitsPracticeSessions[0],
+    id: 'hdl-session-2',
+    question_ids: '["not-a-question"]',
+  });
+  const parsed = parseRevisionBackup(backup, now);
+  assert.equal(parsed.todos.length, 1);
+  assert.equal(parsed.hdlbitsPracticeSessions.length, 1);
+  assert.equal(parsed.skipped.todos, 2);
+  assert.equal(parsed.skipped.hdlbitsPracticeSessions, 1);
 });
