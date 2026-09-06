@@ -7,6 +7,9 @@ quality of the current one.
 
 **Live app:** <https://revision-solved.kapiltripathi267.chatgpt.site>
 
+**For your next study session:** [Start here](START_HERE.md). The
+[revision plan](REVISION_PLAN.md) has the longer subject rotation and app guidance.
+
 ## What makes it useful
 
 The app combines four source ledgers in one persistent system:
