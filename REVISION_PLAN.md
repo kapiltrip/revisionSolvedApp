@@ -29,10 +29,10 @@ task and save its outcome. The success measure is whether you can explain,
 derive, code, or debug something later without the answer open.
 
 The source was reviewed at app commit `dfb2970`. All **23 existing automated
-tests passed** with `node --test test/*.test.mjs`. That checks the tested
-scheduling, question catalog, analytics, backup logic, and PWA rules. It does
-not establish live database health, phone behavior, or your learning outcomes;
-this review did not run the deployed app through an end-to-end session.
+tests passed** from `app-files/` with `node --test test/*.test.mjs`. That checks
+the tested scheduling, question catalog, analytics, backup logic, and PWA rules.
+It does not establish live database health, phone behavior, or your learning
+outcomes; this review did not run the deployed app through an end-to-end session.
 
 ## 2. Day 0: close Attempt 2 without starting another marathon
 
@@ -132,10 +132,11 @@ The following actions use controls already present in the source:
 6. Keep daily admin to a few minutes. Use one app record as the revision record;
    the Attempt 2 tracker continues to represent completion of that pass.
 
-**Why step 4 matters:** the [practice endpoint](app/api/hdlbits-practice/route.ts)
-stores sprint outcomes separately. Completing a sprint does not itself write a
-topic revision or schedule its next recall. Avoid assuming the dashboard's
-review queue or study-minute totals were updated by the sprint alone.
+**Why step 4 matters:** the
+[practice endpoint](app-files/app/api/hdlbits-practice/route.ts) stores sprint
+outcomes separately. Completing a sprint does not itself write a topic revision
+or schedule its next recall. Avoid assuming the dashboard's review queue or
+study-minute totals were updated by the sprint alone.
 
 An example revision record:
 
@@ -146,7 +147,8 @@ An example revision record:
 
 ## 6. Rate the attempt and let the next review move
 
-The app's [scheduler](lib/revision-engine.ts) uses these default intervals:
+The app's [scheduler](app-files/lib/revision-engine.ts) uses these default
+intervals:
 
 | Mark | Meaning for this plan | Next review |
 |---|---|---|
@@ -238,15 +240,15 @@ acceptance check: finishing a missed single question creates one dated repair
 and counts its minutes once, including after a reload or retry.
 
 **First priority: include Attempt 2 evidence.** The links in
-[the dashboard](components/revision-dashboard.tsx) and
-[topic seeds](data/topic-seed.ts) still point to Attempt 1. Add Attempt 2 notes
+[the dashboard](app-files/components/revision-dashboard.tsx) and
+[topic seeds](app-files/data/topic-seed.ts) still point to Attempt 1. Add Attempt 2 notes
 and current weakness evidence while preserving the older archive. Map by the
 HDLBits problem URL/slug: tracker entry order is not necessarily the catalog's
 problem number. A completed second-pass entry should retain its actual status
 and explanation link without being presented as a fresh recall test.
 
 **Next: make the picker reflect current recall.** The
-[question picker](lib/hdlbits-question-engine.ts) uses static historical
+[question picker](app-files/lib/hdlbits-question-engine.ts) uses static historical
 attempt/success statistics for “My historical weak spots” and draw history to
 favor less-seen questions. It does not rank by the latest R/H/M outcome or a
 per-question due date. Suggested order: due current misses, due hesitant items,
@@ -263,7 +265,7 @@ does not supersede an existing `next_due_at`; manual color overrides also
 take precedence, so leave urgency on Automatic unless deliberately changing it.
 
 **Later: make progress easier to interpret.** In
-[the analytics](lib/revision-analytics.ts), “retention” is the percentage of
+[the analytics](app-files/lib/revision-analytics.ts), “retention” is the percentage of
 logged R results and “memory strength” is a score built from status, rating,
 streak, and dates. Neither is a measured probability of remembering everything
 or passing an interview. Label them accordingly and emphasize delayed recall

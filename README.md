@@ -127,20 +127,33 @@ statements, indexed for due-topic and revision-history queries, and optimized
 after seed reconciliation. Existing user progress is preserved because seed
 inserts are idempotent.
 
-## Source layout
+## Repository layout
+
+The repository root is intentionally kept for reading. The three Markdown files
+are the reader-facing material; all technical app files are contained in
+`app-files/`.
 
 ```text
-app/                    routes, metadata, manifest, API, and shared theme
-components/             dashboard, PWA installer, and UI primitives
-data/                   topic, subtopic, and real HDLBits question ledgers
-db/                     Drizzle schema
-drizzle/                generated D1 migrations
-lib/revision-engine.ts  tested calendar, urgency, and recall scheduling
-lib/revision-analytics.ts tested streak, load, retention, and memory analysis
-lib/revision-backup.ts  defensive backup validation and normalization
-lib/revision-store.ts   D1 bootstrap and seed reconciliation
-public/sw.js            install/offline shell and read-only data snapshot
-test/                   engine, analytics, backup, seed, and PWA tests
+README.md          app overview and technical reference
+START_HERE.md      short guide for the next revision session
+REVISION_PLAN.md   detailed study and app-improvement plan
+app-files/         application source, configuration, tests, and build files
+```
+
+## App source layout
+
+```text
+app-files/app/                    routes, metadata, manifest, API, and shared theme
+app-files/components/             dashboard, PWA installer, and UI primitives
+app-files/data/                   topic, subtopic, and real HDLBits question ledgers
+app-files/db/                     Drizzle schema
+app-files/drizzle/                generated D1 migrations
+app-files/lib/revision-engine.ts  tested calendar, urgency, and recall scheduling
+app-files/lib/revision-analytics.ts tested streak, load, retention, and memory analysis
+app-files/lib/revision-backup.ts  defensive backup validation and normalization
+app-files/lib/revision-store.ts   D1 bootstrap and seed reconciliation
+app-files/public/sw.js            install/offline shell and read-only data snapshot
+app-files/test/                   engine, analytics, backup, seed, and PWA tests
 ```
 
 ## Local development
@@ -148,6 +161,7 @@ test/                   engine, analytics, backup, seed, and PWA tests
 Requirements: Node.js 22.13 or newer and pnpm.
 
 ```powershell
+cd app-files
 pnpm install
 pnpm dev
 ```
@@ -172,6 +186,7 @@ structure, all 92 HDLBits checks, and the PWA's offline/write-safety rules.
 
 ## Deployment
 
-`.openai/hosting.json` binds the app to its existing private Sites project and
-logical `DB` D1 database. A production build creates the deployable Worker
-bundle in `dist/`; Sites owns the real database resource and deployment wiring.
+`app-files/.openai/hosting.json` binds the app to its existing private Sites
+project and logical `DB` D1 database. A production build creates the deployable
+Worker bundle in `app-files/dist/`; Sites owns the real database resource and
+deployment wiring.
