@@ -7,6 +7,11 @@ quality of the current one.
 
 **Live app:** <https://revision-solved.kapiltripathi267.chatgpt.site>
 
+On Windows, double-click `Open-Revision-Solved.cmd` in this folder to open the
+live app in Chrome with your existing saved revision data. The complete local
+source is in `app-files/`. Its development database is separate from the live
+app's database.
+
 **For your next study session:** [Start here](START_HERE.md). The
 [revision plan](REVISION_PLAN.md) has the longer subject rotation and app guidance.
 
