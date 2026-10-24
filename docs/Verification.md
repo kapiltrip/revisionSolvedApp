@@ -21,11 +21,11 @@
 - A deliberately corrupted backup and an unsupported SVG attachment were rejected.
 - The local math-font endpoint returned HTTP 200, and all 98 imported discussions rendered without KaTeX error markers.
 - Removed the exact temporary API-test entry, topic and event IDs. The local active curriculum contains 98 Maven questions and no test capture titles.
-- Git source changes exclude generated course content, handwriting, runtime state, the original brief and private working files. The final commit/push result is reported in chat.
+- Application code was committed and pushed to the existing GitHub `main` branch. The source privacy audit confirmed that generated course content, handwriting, runtime state, the original brief and private working files were excluded.
 
 ## Verification limits
 
-- Visual browser QA is unverified. Automatic approval review rejected the headless Chrome launch as “blocked by policy” without another reason. No screenshots or browser rendering are claimed as checked.
+- Visual browser QA is unverified. Automatic approval review rejected both the headless Chrome check and a normal Chrome launch as “blocked by policy” without another reason. The local server and launcher are available; no screenshots or browser rendering are claimed as checked.
 - Jansi's live email review could not be read through the connected Thapar Gmail account. The app contains no invented trainer feedback or scores.
 - Assignment 6–7 originals are absent from the saved collection and have not been inferred from other assignments.
 - The Sites connector returns `project_not_found` for the existing project under the current connection. No new Site or replacement URL has been created, and no production deployment is claimed.

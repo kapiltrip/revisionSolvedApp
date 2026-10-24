@@ -24,3 +24,4 @@ The app's Updates area records subsequent saved activity and exports it as Markd
 - Removed only the temporary API-test fixtures after verification; the active local curriculum contains 98 Maven questions.
 - Confirmed that this GitHub source repository is public. Original course content, handwriting, full discussions, the supplied brief, runtime data and private working files are excluded from Git.
 - The local app uses `http://localhost:3210/`. Publishing to the existing project and importing the Jansi correspondence still require access to their original accounts. No replacement Site was created.
+- Application code was committed and pushed to the existing GitHub main branch. Private course material and runtime data were excluded. Automatic approval review blocked opening Chrome, so visual browser checks remain unverified.
