@@ -1,197 +1,87 @@
-# Revision Solved
+# Maven Silicon Revision
 
-Revision Solved is a personal revision command center for Kapil's real study
-repositories. It turns a large syllabus into a realistic next session, records
-proof instead of passive familiarity, and schedules the next recall from the
-quality of the current one.
+A personal revision app organized around **Maven Silicon → Digital → assignment → question**. Your current course position is Assignment 7. The revision principle is unchanged: attempt from memory, record proof, mark recalled/hesitant/missed, and return on the scheduled day.
 
-**Live app:** <https://revision-solved.kapiltripathi267.chatgpt.site>
+[Start the app](START_HERE.md) · [Requirements from the brief](docs/Requirements.md) · [Updates](Updates.md) · [To Ask](To-Ask.md) · [Earlier topics](docs/Earlier-Topics.md)
 
-On Windows, double-click `Open-Revision-Solved.cmd` in this folder to open the
-live app in Chrome with your existing saved revision data. The complete local
-source is in `app-files/`. Its development database is separate from the live
-app's database.
+## Study areas
 
-**For your next study session:** [Start here](START_HERE.md). The
-[revision plan](REVISION_PLAN.md) has the longer subject rotation and app guidance.
+| Area | What it does |
+|---|---|
+| Revision | Prioritized recall queue, timer, R/H/M outcomes, evidence, repair actions and calendar-based scheduling |
+| Assignments | Concept, application, solving and spoken-explanation practice; original question, handwriting and discussion together |
+| Instructor reviews | Verified trainer feedback, definitions, spoken-answer practice, response and repair records |
+| To Ask | Trainer doubts with assignment/question context, unchanged images, responses and a Markdown export |
+| Notes & to-dos | Original screenshot/image/PDF capture and the next action surfaced at the top of the app |
+| Updates | Saved activity, Markdown export, earlier-topic inventory and recoverable legacy data |
 
-## What makes it useful
+The local content import contains **98 questions and 248 original images across Assignments 1–5**. Assignments 6 and 7 remain source-needed until their actual material is available. Assignment 7 indicates Kapil's reported course position; it does not invent completion, submission, a score or recall confidence.
 
-The app combines four source ledgers in one persistent system:
-
-| Repository                                                                                | What is tracked                                                   |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [RevisionAtlas](https://github.com/kapiltrip/RevisionAtlas)                               | Digital design, protocols, AMBA, timing, CMOS, and architecture   |
-| [SystemVerilog from Beginning](https://github.com/kapiltrip/systemverilog-from-beginning) | SystemVerilog language, assertions, and functional coverage       |
-| [C++ & Scripting Practice](https://github.com/kapiltrip/cpp-and-scripting-practice)       | Modern C++, Perl, shell, regular expressions, and EDA automation  |
-| [HDLBits](https://github.com/kapiltrip/hdlBits)                                           | The complete RTL problem archive, revision plan, and weakness log |
-
-The dashboard is a working surface rather than a static syllabus:
-
-- builds a session from available minutes and current energy;
-- keeps a durable personal to-do list with deadlines, priorities, categories,
-  optional in-app browser alerts, editing, and completion history;
-- draws a real HDLBits question on demand, automatically expands curated
-  multi-part series, and gives the complete sprint a reload-safe time window;
-- ranks topics by due date, recall quality, priority, and manual urgency;
-- shows repository, subject, topic, and subtopic coverage;
-- records R/H/M recall quality, time, mood, proof, reflection, and the next
-  repair, including a reusable mistake category and concrete repair action;
-- runs a reload-safe focus session with a blind-recall evidence sequence and
-  converts the elapsed work directly into a revision observation;
-- measures daily-goal progress, current and best streaks, retention, 14-day
-  activity, memory strength, and the next seven days of study load;
-- turns hesitant and missed recalls into a prioritized repair queue;
-- learns a topic's expected duration from completed sessions;
-- maintains a recent revision trail and a “last time → now” recommendation;
-- supports global scheduling rules and per-topic overrides;
-- adds custom topics to any of the four ledgers;
-- exports the complete database view as a portable JSON backup and safely
-  restores a validated backup without deleting newer records.
-
-## HDLBits command center
-
-HDLBits is not represented by one generic checkbox. The seed data mirrors the
-real revision structure in `kapiltrip/hdlBits`:
-
-- **178/178 archived problems** with notes, screenshots, and saved `.sv`
-  solutions;
-- **17 recall batches** covering foundations through Conway's Game of Life;
-- **24 documented weakness themes** split into two repair labs;
-- **92 durable app checks** that expose the concepts and proof required inside
-  each batch.
-
-The dedicated HDLBits workflow enforces:
-
-1. draw from the complete 178-question local archive, prioritizing unseen or
-   historically weak questions;
-2. expand known series such as Lemmings, serial receivers, PS/2, timer design,
-   and cellular automata into one ordered sprint with a complete time budget;
-3. attempt without opening the saved solution;
-4. compile or submit to produce evidence;
-5. inspect the first wrong signal and cycle;
-6. record the outcome as recalled, hesitant, or missed.
-
-Deep links lead directly to the repository, 178-problem learning archive,
-dated revision sheet, and 24-theme mistakes log.
-
-## Memory scheduling
-
-R/H/M means:
-
-- **R — Recalled:** the solution or explanation was produced from memory;
-- **H — Hesitant:** the design was understood but needed minor help;
-- **M — Missed:** the learner could not produce the required proof.
-
-The default ladder schedules M after 1 day, H after 3 days, then successful R
-recalls after 7, 14, and 30 days. Every interval is editable in the app. Date
-math is calendar-based and covered by automated boundary tests, including leap
-years.
-
-## Android and Windows
-
-Revision Solved is a responsive Progressive Web App (PWA), so one deployed URL
-serves both platforms and remains easy to update.
-
-- **Android:** open the live URL in Chrome and choose **Install app**.
-- **Windows:** open the live URL in Chrome and use the install button in the
-  address bar or app header.
-
-The installed version opens in a standalone window. The application shell and
-last successful read-only dashboard snapshot are cached for resilient offline
-review. All writes remain network-only, and the interface becomes explicitly
-read-only while disconnected so stale data cannot overwrite the revision
-database.
-
-## Architecture
+## Files
 
 ```text
-Responsive React PWA
-        │
-        ├── adaptive planner + focus session + observation dashboard
-        ├── memory analytics + load forecast + mistake repair queue
-        ├── repository/subject/topic/subtopic views
-        └── installable Android and Windows shell
-        │
-Vinext route handlers
-        │
-Cloudflare D1
-        ├── topics
-        ├── subtopics
-        ├── revisions
-        ├── revision_settings
-        ├── todo_items
-        └── hdlbits_practice_sessions
-
-Versioned seed ledgers ──► idempotent database bootstrap
+README.md                 overview and navigation
+START_HERE.md             launching and using the app
+Updates.md                implementation progress
+To-Ask.md                 local trainer-question handoff
+docs/                     requirements, checks and earlier-topic inventory
+tools/                    launch, content preparation and private-source import
+sources/                  original brief and local-only inputs (not committed)
+web/
+  app/                    routes, APIs, app metadata and theme
+  features/maven/         study workspace, question reader and capture form
+  content/maven/          local course catalog, discussions and image hashes
+  public/maven/digital/   original imported question and handwriting images
+  data/                   Maven recall-topic and four-mode check seeds
+  lib/maven/              archive migration, capture validation and backup logic
+  lib/revision-*.ts       preserved scheduling, analytics and backup foundations
+  db/                     database schema and worker binding
+  test/                   scheduling, migration, original-content and backup tests
 ```
 
-The UI is React 19 with reusable shadcn primitives and Lucide icons. Vinext
-produces Cloudflare Worker-compatible output. D1 is initialized with prepared
-statements, indexed for due-topic and revision-history queries, and optimized
-after seed reconciliation. Existing user progress is preserved because seed
-inserts are idempotent.
+## Running locally
 
-## Repository layout
+Double-click **Open-Maven-Silicon-Revision.cmd**. It starts the local app when necessary and opens it in Google Chrome. The old launcher remains a compatibility entry point.
 
-The repository root is intentionally kept for reading. The three Markdown files
-are the reader-facing material; all technical app files are contained in
-`app-files/`.
-
-```text
-README.md          app overview and technical reference
-START_HERE.md      short guide for the next revision session
-REVISION_PLAN.md   detailed study and app-improvement plan
-app-files/         application source, configuration, tests, and build files
-```
-
-## App source layout
-
-```text
-app-files/app/                    routes, metadata, manifest, API, and shared theme
-app-files/components/             dashboard, PWA installer, and UI primitives
-app-files/data/                   topic, subtopic, and real HDLBits question ledgers
-app-files/db/                     Drizzle schema
-app-files/drizzle/                generated D1 migrations
-app-files/lib/revision-engine.ts  tested calendar, urgency, and recall scheduling
-app-files/lib/revision-analytics.ts tested streak, load, retention, and memory analysis
-app-files/lib/revision-backup.ts  defensive backup validation and normalization
-app-files/lib/revision-store.ts   D1 bootstrap and seed reconciliation
-app-files/public/sw.js            install/offline shell and read-only data snapshot
-app-files/test/                   engine, analytics, backup, seed, and PWA tests
-```
-
-## Local development
-
-Requirements: Node.js 22.13 or newer and pnpm.
+For development, use Node.js 22.13 or later:
 
 ```powershell
-cd app-files
+cd web
 pnpm install
 pnpm dev
 ```
 
-Open <http://localhost:3000>.
-
-## Verification
+Import the private saved collection from the repository root:
 
 ```powershell
+node tools/import-maven.mjs 'C:/Users/kapil/OneDrive/Desktop/mavensilicon assignments'
+```
+
+The importer checks that every question has an original question image, original solution image and discussion. It renders equations, retains all original image bytes and records SHA-256 hashes. The source assignment repository stays unchanged.
+
+## Storage and recovery
+
+Captures and original attachments live in the app's D1 database. Large originals are stored in chunks below the database row limit; downloading joins those exact bytes. Each file may be up to 8 MB, with three files per save. Images are not resized or recompressed.
+
+Full JSON backups include recall history, settings, captures, responses, attachment bytes, updates and the legacy archive. Restoring checks original-file size, type and SHA-256. The restore size limit is 64 MB. Earlier Revision Solved backups are imported into the legacy archive.
+
+The first Maven migration atomically archives the older curriculum and learner records before removing them from active study. Repeated initialization does not archive new work. The source files replaced during this update were cut into `C:/Users/kapil/OneDrive/Desktop/To Review/Revision-Solved-before-Maven-2026-10-24`, including a snapshot of the earlier local database.
+
+The service worker caches read-only snapshots and previously opened material. Writes require a connection. The visible app refreshes saved activity every 15 seconds and immediately after a save.
+
+## Source privacy and publication
+
+The application GitHub repository is public. Course questions, personal handwriting, full notebook discussions, private inputs and correspondence are excluded from Git. A fresh public checkout builds with an empty source-needed catalog; run the importer locally to add the saved private collection.
+
+The existing hosted app is [Revision Solved](https://revision-solved.kapiltripathi267.chatgpt.site). Its project identity is preserved. Local changes do not imply that this URL has been redeployed. The current Sites connection cannot access that project, and the connected Gmail account does not contain the requested Jansi conversation. The interface explicitly distinguishes missing review material from confirmed feedback.
+
+## Checks
+
+```powershell
+cd web
 pnpm typecheck
-pnpm lint
 pnpm test
-pnpm test:coverage
 pnpm build
 ```
 
-The automated suite verifies calendar boundaries, urgency precedence, the
-complete R/H/M ladder, memory analytics and streaks, hostile backup rejection,
-safe backup normalization, all 178 HDLBits question identifiers and curated
-series, uniqueness of every seed identifier, the exact 17 + 2 HDLBits
-structure, all 92 HDLBits checks, and the PWA's offline/write-safety rules.
-
-## Deployment
-
-`app-files/.openai/hosting.json` binds the app to its existing private Sites
-project and logical `DB` D1 database. A production build creates the deployable
-Worker bundle in `app-files/dist/`; Sites owns the real database resource and
-deployment wiring.
+[Verification record](docs/Verification.md) reports actual checks and any limits.

@@ -1,0 +1,12 @@
+# Course originals, generated notebook text and private local inputs stay local.
+/sources/
+/.work/
+/app-files/content/maven/catalog.json
+/app-files/content/maven/assignment-*.json
+/app-files/content/maven/source-manifest.json
+/app-files/public/maven/
+/web/content/maven/catalog.json
+/web/content/maven/assignment-*.json
+/web/content/maven/source-manifest.json
+/web/public/maven/
+/web/public/vendor/

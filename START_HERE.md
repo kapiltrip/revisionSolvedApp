@@ -1,63 +1,23 @@
-# Start here — your next revision session
+# Start Maven Silicon Revision
 
-**You do not have to revise every subject every day.** For now, finish the
-current HDLBits pass and give yourself one small next task. Keep this page as
-your daily starting point. The [detailed plan](REVISION_PLAN.md) is a reference
-to open when you need it.
+Double-click **Open-Maven-Silicon-Revision.cmd** in this folder. Google Chrome opens the local app at `http://localhost:3210`. Your local progress and the hosted app's progress are separate until a production update is available.
 
-## Until HDLBits Attempt 2 is finished
+## Your next session
 
-Continue from the next unfinished problem in your tracker. If it needs longer
-than expected, move the finish date. Choose a manageable session length before
-starting, and record where to continue when you stop.
+1. **Assignment 7 is current.** Add your working or a screenshot there, and capture doubts in **To Ask**. The app clearly labels missing original material.
+2. Open **Revision** and choose a due, hesitant or missed question, or begin a new recall from Assignments 1–5.
+3. Choose **Concept**, **Application**, **Solve** or **Speak**. Work before revealing your saved solution.
+4. Compare the original handwriting and discussion. Record your proof, minutes and R/H/M outcome; add the specific repair you need.
+5. Before a trainer session, open **To Ask**. Afterward, save the response or verified feedback in **Instructor reviews**.
 
-Keep only **three current doubts** in your immediate list. For example:
+## Capturing an image
 
-- On which edge should the 1101 detector's output change?
-- Which old counter value is used when a serial bit is captured?
-- When should a packet receiver capture its final byte and assert `done`?
+Open **Capture**, click inside the dialog and paste the screenshot, or use the attachment selector. Add a meaningful title and optional assignment/question context. Review the original preview, then save. The app preserves the file exactly as supplied.
 
-Replace these examples with your actual doubts. Leave the rest in your existing
-notes. You can expand the list later if three becomes easy to manage.
+Use **Updates.md**, **To-Ask.md** and **Download full backup** in the app to export current saved activity, trainer questions and recoverable data. Keep full backups private: they include your original attachments and feedback.
 
-## After you finish: try this ordinary session
+## Earlier files
 
-1. **20 minutes — one HDLBits recall.** Start with a recent doubt. Try the
-   reasoning or code with the answer closed, then check the relevant note or
-   simulation. A difficult problem can take the whole session.
-2. **35 minutes — one SystemVerilog concept.** Start with handles and objects:
-   explain what happens when two handles refer to the same object. Continue
-   from there next time; use the longer plan when choosing later subjects.
-3. **5 minutes — save the outcome and stop.** Write what needed help and the
-   exact next action. There is no daily requirement to produce another PDF.
+The replaced material is in [the To Review archive](<C:/Users/kapil/OneDrive/Desktop/To Review/Revision-Solved-before-Maven-2026-10-24>). Inspect it before deleting anything. The app's Updates area also lists the 79 earlier topics and exports archived database records.
 
-These are starting budgets. On a difficult day, spend **10–20 minutes on one
-small prompt**, record where you stopped, and finish there. If you miss a day,
-resume the next session without doubling the workload.
-
-## Use only the app features you need
-
-Choose a topic, attempt it, and record R/H/M. Use **Give only one question** for
-short HDLBits practice. For a particular recent mistake, open that problem
-directly rather than waiting for the random picker to select it.
-
-**Current app detail:** saving an HDLBits sprint does not automatically schedule
-a topic review. Also record the relevant topic revision when you want it in
-the review queue. State the specific concept tested; one question does not
-establish recall of an entire batch.
-
-If the app takes too much attention today, use this single line in your existing
-notes and transfer it later:
-
-> Tried: … | Needed help with: … | Next action: …
-
-## When everything feels urgent
-
-Choose the next concrete action: “trace five clock edges” or “write the reset
-block.” Work on that slice. The other subjects can wait for their turn in the
-rotation. Leave app improvements in the detailed plan until a specific issue
-repeatedly interrupts study.
-
-**Today's finish line is one honest attempt and a clear next step.** Check your
-progress by what you can explain again later. You do not need to make every
-dashboard indicator green before stopping.
+The [implementation updates](Updates.md) and [verification record](docs/Verification.md) distinguish completed local work from pending source access and deployment.

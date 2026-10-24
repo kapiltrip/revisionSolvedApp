@@ -1,0 +1,476 @@
+[
+  {
+    "id": "sv-basics-01-08",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Basics",
+    "title": "Basics 01–08 — simulation and collections"
+  },
+  {
+    "id": "sv-basics-09-21",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Basics",
+    "title": "Basics 09–21 — classes and object behavior"
+  },
+  {
+    "id": "sv-basics-22-29",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Basics",
+    "title": "Basics 22–29 — constrained random stimulus"
+  },
+  {
+    "id": "sv-basics-30-39",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Basics",
+    "title": "Basics 30–39 — process communication"
+  },
+  {
+    "id": "sv-basics-40-44",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Basics",
+    "title": "Basics 40–44 — layered DUT communication"
+  },
+  {
+    "id": "sv-task-function",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Basics",
+    "title": "Repair — task versus function"
+  },
+  {
+    "id": "sv-coverage-repair-06",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Repair — reusable covergroup use cases"
+  },
+  {
+    "id": "sv-coverage-repair-07",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Repair — sampling methods"
+  },
+  {
+    "id": "sv-coverage-repair-08",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Repair — cross coverage"
+  },
+  {
+    "id": "sv-coverage-repair-09",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Repair — transition bins"
+  },
+  {
+    "id": "sva-scheduler",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA scheduler foundation"
+  },
+  {
+    "id": "sva-01-07",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA 01–07"
+  },
+  {
+    "id": "sva-08-14",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA 08–14"
+  },
+  {
+    "id": "sva-15-21",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA 15–21"
+  },
+  {
+    "id": "sva-22-28",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA 22–28"
+  },
+  {
+    "id": "sva-project-fsm",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA project — FSM verification"
+  },
+  {
+    "id": "sva-project-counter",
+    "repository": "systemverilog-from-beginning",
+    "subject": "SV Assertions",
+    "title": "SVA project — counter assertions with bind"
+  },
+  {
+    "id": "atlas-fifo",
+    "repository": "revision-solved",
+    "subject": "Digital Design",
+    "title": "FIFO — contract, pointers, flags and verification"
+  },
+  {
+    "id": "atlas-frequency-dividers",
+    "repository": "revision-solved",
+    "subject": "Digital Design",
+    "title": "Frequency Dividers — 13 pages"
+  },
+  {
+    "id": "atlas-divider-rtl",
+    "repository": "revision-solved",
+    "subject": "Digital Design",
+    "title": "Programmable Divider RTL — /2 through /5"
+  },
+  {
+    "id": "atlas-i2c",
+    "repository": "revision-solved",
+    "subject": "Protocols",
+    "title": "I2C"
+  },
+  {
+    "id": "atlas-spi",
+    "repository": "revision-solved",
+    "subject": "Protocols",
+    "title": "SPI"
+  },
+  {
+    "id": "atlas-uart",
+    "repository": "revision-solved",
+    "subject": "Protocols",
+    "title": "UART"
+  },
+  {
+    "id": "atlas-ahb",
+    "repository": "revision-solved",
+    "subject": "AMBA",
+    "title": "AMBA AHB"
+  },
+  {
+    "id": "atlas-apb",
+    "repository": "revision-solved",
+    "subject": "AMBA",
+    "title": "AMBA APB"
+  },
+  {
+    "id": "atlas-axi-01",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 1"
+  },
+  {
+    "id": "atlas-axi-02",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 2"
+  },
+  {
+    "id": "atlas-axi-03",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 3"
+  },
+  {
+    "id": "atlas-axi-04",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 4"
+  },
+  {
+    "id": "atlas-axi-05",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 5"
+  },
+  {
+    "id": "atlas-axi-06",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 6"
+  },
+  {
+    "id": "atlas-axi-07",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 7"
+  },
+  {
+    "id": "atlas-axi-08",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 8"
+  },
+  {
+    "id": "atlas-axi-09",
+    "repository": "revision-solved",
+    "subject": "AMBA AXI",
+    "title": "AXI Section 9"
+  },
+  {
+    "id": "atlas-sta",
+    "repository": "revision-solved",
+    "subject": "Timing",
+    "title": "Static Timing Analysis — 25 pages"
+  },
+  {
+    "id": "atlas-mos-01",
+    "repository": "revision-solved",
+    "subject": "MOSFET and CMOS",
+    "title": "MOSFET/CMOS notebook 1 — MOS capacitor fundamentals"
+  },
+  {
+    "id": "atlas-mos-02",
+    "repository": "revision-solved",
+    "subject": "MOSFET and CMOS",
+    "title": "MOSFET/CMOS notebook 2 — non-ideal MOS and regions"
+  },
+  {
+    "id": "atlas-mos-03",
+    "repository": "revision-solved",
+    "subject": "MOSFET and CMOS",
+    "title": "MOSFET/CMOS notebook 3 — models and inverter"
+  },
+  {
+    "id": "atlas-mos-04",
+    "repository": "revision-solved",
+    "subject": "MOSFET and CMOS",
+    "title": "MOSFET/CMOS notebook 4 — delay, power and noise"
+  },
+  {
+    "id": "atlas-mos-05",
+    "repository": "revision-solved",
+    "subject": "MOSFET and CMOS",
+    "title": "MOSFET/CMOS notebook 5 — sizing and NAND timing"
+  },
+  {
+    "id": "atlas-architecture",
+    "repository": "revision-solved",
+    "subject": "Computer Architecture",
+    "title": "RISC/CISC foundation"
+  },
+  {
+    "id": "fc-intent",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Requirements and coverage intent"
+  },
+  {
+    "id": "fc-lifecycle",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Covergroup lifecycle and sampling"
+  },
+  {
+    "id": "fc-coverpoints",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Coverpoints and bin forms"
+  },
+  {
+    "id": "fc-conditions",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Conditions and transition bins"
+  },
+  {
+    "id": "fc-cross",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Cross coverage and filtering"
+  },
+  {
+    "id": "fc-options",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Options and percentage interpretation"
+  },
+  {
+    "id": "fc-architecture",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Transaction-level coverage architecture"
+  },
+  {
+    "id": "fc-closure",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "Coverage-driven stimulus and closure"
+  },
+  {
+    "id": "fc-fifo-capstone",
+    "repository": "systemverilog-from-beginning",
+    "subject": "Functional Coverage",
+    "title": "FIFO functional-coverage capstone"
+  },
+  {
+    "id": "hdlbits-b01-foundations",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Verilog",
+    "title": "B01 · Verilog foundations — problems 001–017, 151–152"
+  },
+  {
+    "id": "hdlbits-b02-modules-procedures",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Verilog",
+    "title": "B02 · Modules and procedural blocks — problems 018–034"
+  },
+  {
+    "id": "hdlbits-b03-features-gates",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Combinational",
+    "title": "B03 · Advanced Verilog and basic gates I — problems 035–050"
+  },
+  {
+    "id": "hdlbits-b04-gates-muxes",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Combinational",
+    "title": "B04 · Basic gates II and multiplexers — problems 051–063"
+  },
+  {
+    "id": "hdlbits-b05-arithmetic-kmaps",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Combinational",
+    "title": "B05 · Arithmetic circuits and Karnaugh maps — problems 064–078"
+  },
+  {
+    "id": "hdlbits-b06-latches-dffs",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Sequential",
+    "title": "B06 · Latches, DFFs, reset and enable — problems 079–088"
+  },
+  {
+    "id": "hdlbits-b07-edges-counters",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Sequential",
+    "title": "B07 · DFF applications, edge detection and counters — problems 089–100"
+  },
+  {
+    "id": "hdlbits-b08-shift-lfsr",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Sequential",
+    "title": "B08 · Shift registers, rotators and LFSRs — problems 101–109"
+  },
+  {
+    "id": "hdlbits-b09-fsm-foundations",
+    "repository": "hdlbits",
+    "subject": "HDLBits · FSM",
+    "title": "B09 · FSM foundations and Lemmings 1 — problems 110–119"
+  },
+  {
+    "id": "hdlbits-b10-debug-waveforms-1",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Debug",
+    "title": "B10 · Debugging and waveform circuits I — problems 122–132"
+  },
+  {
+    "id": "hdlbits-b11-waveforms-testbenches",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Debug",
+    "title": "B11 · Waveform circuits II and testbenches — problems 133–141"
+  },
+  {
+    "id": "hdlbits-b12-advanced-counters",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Sequential",
+    "title": "B12 · Advanced counters and combined designs — problems 143–150"
+  },
+  {
+    "id": "hdlbits-b13-fsm-timer",
+    "repository": "hdlbits",
+    "subject": "HDLBits · FSM",
+    "title": "B13 · FSM exam set and complete timer — problems 121, 142, 153–158"
+  },
+  {
+    "id": "hdlbits-b14-lemmings-serial",
+    "repository": "hdlbits",
+    "subject": "HDLBits · FSM",
+    "title": "B14 · Lemmings, one-hot FSM and serial receiver — problems 159–164"
+  },
+  {
+    "id": "hdlbits-b15-protocol-datapaths",
+    "repository": "hdlbits",
+    "subject": "HDLBits · FSM",
+    "title": "B15 · Parity, PS/2, HDLC and complementers — problems 165–170"
+  },
+  {
+    "id": "hdlbits-b16-fsm-equations-arbiter",
+    "repository": "hdlbits",
+    "subject": "HDLBits · FSM",
+    "title": "B16 · Advanced FSM equations and arbiter — problems 171–174, 177–178"
+  },
+  {
+    "id": "hdlbits-b17-cellular-automata",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Sequential",
+    "title": "B17 · Cellular automata and Conway Life — problems 175–176, 179"
+  },
+  {
+    "id": "hdlbits-weaknesses-01-12",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Weakness Lab",
+    "title": "Weakness lab 01–12 · Syntax through testbench reasoning"
+  },
+  {
+    "id": "hdlbits-weaknesses-13-24",
+    "repository": "hdlbits",
+    "subject": "HDLBits · Weakness Lab",
+    "title": "Weakness lab 13–24 · Timer, protocols, FSM equations and Life"
+  },
+  {
+    "id": "cpp-phase-1",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "C++ Practice",
+    "title": "Phase 1 — language fundamentals"
+  },
+  {
+    "id": "cpp-phase-2",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "C++ Practice",
+    "title": "Phase 2 — lifetime, ownership and abstraction"
+  },
+  {
+    "id": "cpp-phase-3",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "C++ Practice",
+    "title": "Phase 3 — standard library and algorithms"
+  },
+  {
+    "id": "cpp-phase-4",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "C++ Practice",
+    "title": "Phase 4 — generic and modern C++"
+  },
+  {
+    "id": "cpp-phase-5",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "C++ Practice",
+    "title": "Phase 5 — professional engineering"
+  },
+  {
+    "id": "cpp-phase-6",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "C++ Practice",
+    "title": "Phase 6 — VLSI/EDA capstone"
+  },
+  {
+    "id": "script-perl",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "Scripting Practice",
+    "title": "Perl fundamentals"
+  },
+  {
+    "id": "script-regex",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "Scripting Practice",
+    "title": "Regular expressions"
+  },
+  {
+    "id": "script-shell",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "Scripting Practice",
+    "title": "Shell scripting fundamentals"
+  },
+  {
+    "id": "script-automation",
+    "repository": "cpp-and-scripting-practice",
+    "subject": "Scripting Practice",
+    "title": "Automation support track"
+  }
+]
